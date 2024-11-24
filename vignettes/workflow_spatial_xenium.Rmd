@@ -21,22 +21,14 @@ author:
       - ref: weh
       - id: uom
         name: The University of Melbourne
-format: 
-  html:
-    theme: minty
-    df-print: paged
-    code-line-numbers: true
-    embed-resources: true
-    toc: true
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    toc: yes
     toc_depth: 2
     number_sections: yes
     fig_caption: yes
-    html-math-method: mathjax
-knitr:
-  opts_chunk: 
-    message: false
-    warning: false
-    echo: false
+    df_print: paged
 comments:
   hypothesis: 
     theme: clean
@@ -46,7 +38,7 @@ nocite: |
 bibliography: [bibliography.bib, packages.bib]
 vignette: >
   %\VignetteIndexEntry{Introduction to imaging-based spatial transcriptomics analysis (10x Xenium breast cancer).}
-  %\VignetteEngine{quarto::html}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 keywords: spatial transcriptomics, cell typing, normalisation, signature scoring, visualisation
 abstract: >
@@ -89,6 +81,8 @@ knitr::write_bib(c(
 Technology, data, and types of problems that can be answered
 
 # Description of the biological problem
+
+# Loading prepared the data
 
 ![Full IDC](inst/extdata/full_tissue.png)
 
