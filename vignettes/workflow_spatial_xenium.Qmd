@@ -1,0 +1,428 @@
+---
+title: "Introduction to imaging-based spatial transcriptomics analysis (10x Xenium breast cancer)"
+date: "`r format(Sys.time(), '%b %Y')`"
+title-block-banner: true
+author: 
+  - name: Dharmesh D. Bhuva
+    orcid: 0000-0002-6398-9157
+    url: https://bhuvad.github.io/
+    email: dharmesh.bhuva@adelaide.edu.au
+    affiliation:
+      - id: sgc
+        name: SAiGENCI, The University of Adelaide
+      - id: sah
+        name: South Australian Health and Medical Research Institute (SAHMRI)
+      - id: weh
+        name: Walter and Eliza Hall Institute
+  - name: Chin Wee Tan
+    orcid: 0000-0001-9695-7218
+    email: cwtan@wehi.edu.au
+    affiliation:
+      - ref: weh
+      - id: uom
+        name: The University of Melbourne
+format: 
+  html:
+    theme: minty
+    df-print: paged
+    code-line-numbers: true
+    embed-resources: true
+    toc: true
+    toc_depth: 2
+    number_sections: yes
+    fig_caption: yes
+    html-math-method: mathjax
+knitr:
+  opts_chunk: 
+    message: false
+    warning: false
+    echo: false
+comments:
+  hypothesis: 
+    theme: clean
+editor: source
+nocite: | 
+  @R-ggplot2, @R-knitr, @R-rmarkdown, @R-prettydoc
+bibliography: [bibliography.bib, packages.bib]
+vignette: >
+  %\VignetteIndexEntry{Introduction to imaging-based spatial transcriptomics analysis (10x Xenium breast cancer).}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+keywords: spatial transcriptomics, cell typing, normalisation, signature scoring, visualisation
+abstract: >
+  Abstract
+---
+
+<p>
+
+**R version**: `r R.version.string` <br /> **Bioconductor version**: `r BiocManager::version()` <br /> **Package version**: `r packageVersion("XeniumSpatialAnalysisWorkshop")`
+
+</p>
+
+```{r setup, include=FALSE}
+#set knitr chunk options
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+#load packages to avoid startup messages later in the code
+library(ggplot2)
+library(patchwork)
+library(scran)
+library(scater)
+library(standR)
+library(SingleR)
+library(SpatialExperiment)
+library(SpaNorm)
+library(singscore)
+library(msigdb)
+library(vissE)
+library(igraph)
+library(XeniumSpatialAnalysisWorkshop)
+
+#automatically create a bib database for R packages
+knitr::write_bib(c(
+  .packages(), 'knitr', 'rmarkdown', 'prettydoc'
+), 'packages.bib')
+```
+
+# Introduction
+
+Technology, data, and types of problems that can be answered
+
+# Description of the biological problem
+
+![Full IDC](inst/extdata/full_tissue.png)
+
+x coordinate is in the interval (4800, 5800) and the y coordinate is in the interval (8500, 9500)
+
+```{r}
+data(idc)
+# preview object
+idc
+# retrieve column (cell) annotations
+colData(idc)
+# retrieve row (gene/probe) annotations
+rowData(idc)
+# retrieve spatial coordinates
+head(spatialCoords(idc))
+# retrieve counts - top 5 cells and genes
+counts(idc)[1:5, 1:5]
+```
+
+```{r}
+plotSpatial(idc, colour = region) +
+  scale_colour_brewer(palette = "Dark2")
+```
+
+For users interested in analysing the whole dataset, it can be obtained using the code below.
+
+> Please note that the full dataset contains over 500,000 cells and will not scale for the purpose of this workshop. If interested, run the code below on your own laptop.
+
+```{r eval = FALSE}
+## DO NOT RUN during the workshop as the data are large
+if (!require("ExperimentHub", quietly = TRUE)) {
+  BiocManager::install("ExperimentHub")
+}
+if (!require("SubcellularSpatialData", quietly = TRUE)) {
+  BiocManager::install("SubcellularSpatialData")
+}
+
+# load the metadata from the ExperimentHub
+eh = ExperimentHub()
+# download the transcript-level data
+tx = eh[["EH8567"]]
+# filter the IDC sample
+tx = tx[tx$sample_id == "IDC", ]
+# summarise measurements for each cell
+idc = tx2spe(tx)
+```
+
+# Quality control
+
+Most spatial transcriptomics assays include negative control probes to aid in quality control. These probes do not bind to the transcripts of interest (signal), so represent noise in the assay. There are three different types of negative controls in the 10x Xenium assay. As these vary across technologies and serve different purposes, we treat them equally for our analysis and assess them collectively. The breakdown of the different types of negative control probes is given below.
+
+```{r}
+table(rowData(idc)$genetype)
+```
+
+We now use compute and visualise quality control metrics for each cell. Some of the key metrics we assess are:
+
+1. `sum` or `total` - Total number of transcripts and negative control probes per cell (more commonly called the library size).
+1. `detected` - Number of transcripts and negative control probes detected per cell (count > 0).
+1. `subsets_neg_sum` - Count of negative control probes (noise) per cell.
+1. `subsets_neg_detected` - Number of negative control probes expressed per cell (count > 0).
+1. `subsets_neg_percent` - `subsets_neg_sum` / `sum`.
+
+Additionally, the vendor (10x) provides their own summary of quality through the `qv` score. This is usually provided per detected measurements but we compute the average per cell when deriving cellular summaries. Likewise, we compute the number of transcripts allocated to the nucleus (`overlaps_nucleus`).
+
+```{r}
+# identify the negative control probes
+is_neg = rowData(idc)$genetype != "Gene"
+# compute QC metrics for each cell
+idc = addPerCellQCMetrics(idc, subsets = list("neg" = is_neg))
+```
+
+> Quality control is all about visualisation!
+
+One of the best ways to understand the data and identify problematic cells or regions is to visualise the QC metrics. We need to visualise the metrics in various contexts to better understand what cells appear of poor qaulity. As such, we usually plot metrics against each other, we visualise them in space, and we visualise them in the context of the higher dimensional structure of the data. To aid the latter, we will compute lower dimensional representations using the t-distributed stochastic neighbours embedding (t-SNE). As the t-SNE embedding can be computationally intensive, we usually perform PCA prior to t-SNE. This approach to quality control is identical to that used for single-cell RNA-seq analysis.
+
+```{r}
+# compute log counts - to fix the skew with counts
+logcounts(idc) = log2(counts(idc) + 1)
+# compute PCA
+idc = runPCA(idc)
+# compute t-SNE
+idc = runTSNE(idc, dimred = "PCA")
+```
+
+We plot the `sum` (library size) against the number of genes detected, and colouring the points based on the quality score (`qv`). We see that as more genes are detected, more measurements are obtained (library size increases). There are cells where the library size is very low and the number of genes detected is low as well. Considering the smaller panel size of 380 target genes in this assay, we expect the number of genes detected in some cell types to be small. However, if we detect very few genes in a cell, we are less likely to obtain any useful information from them. As such, poor quality cells can be defined as those with very low library sizes and number of genes detected.
+
+```{r}
+plotColData(idc, "detected", "sum", colour_by = "qv") +
+  geom_hline(yintercept = 20, lty = 2) +
+  geom_vline(xintercept = 10, lty = 2)
+```
+
+However, we need to identify appropriate thresholds to classify poor quality cells. As the panel sizes and compositions for these emerging technologies are variable, there are no standards as of yet for filtering. For instance, immune cells will always have smaller library sizes and potentially a smaller number of genes expressed in a targetted panel as each cell type may be represented by a few marker genes. Desipte the lack of standards, the extreme cases where cells express fewer than 10 genes and have fewer than 10-20 detections are clearly of poor quality. As such, we can start with these thresholds and adjust based on other metrics and visualisations.
+
+```{r}
+# t-SNE plot
+p1 = plotDR(idc, dimred = "TSNE", colour = sum, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  labs(x = "TSNE1", y = "TSNE2") +
+  theme(legend.position = "bottom")
+# spatial plot
+p2 = plotSpatial(idc, colour = sum, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Sum (library size)")
+```
+
+```{r}
+# t-SNE plot
+p1 = plotDR(idc, dimred = "TSNE", colour = detected, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  labs(x = "TSNE1", y = "TSNE2") +
+  theme(legend.position = "bottom")
+# spatial plot
+p2 = plotSpatial(idc, colour = detected, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Detected (number of genes expressed)")
+```
+
+```{r}
+# t-SNE plot
+p1 = plotDR(idc, dimred = "TSNE", colour = qv, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  labs(x = "TSNE1", y = "TSNE2") +
+  theme(legend.position = "bottom")
+# spatial plot
+p2 = plotSpatial(idc, colour = qv, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Quality score")
+```
+
+```{r}
+# t-SNE plot
+p1 = plotDR(idc, dimred = "TSNE", colour = overlaps_nucleus, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  labs(x = "TSNE1", y = "TSNE2") +
+  theme(legend.position = "bottom")
+# spatial plot
+p2 = plotSpatial(idc, colour = overlaps_nucleus, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Proportion of nucleur transcripts")
+```
+
+Having visualised the quality metrics and their distrition across space and the genomic dimensions, we can now begin to test threshold values. We want to remove low quality cells but we have to be careful not to introduce bias (e.g., by preferentially removing biological entities such as regions or cells).
+
+Try modifying the thresholds below to see the effect of over- or under- filtering.
+
+* What happens when you set the `sum` threshold to 100?
+* What about setting the `detected` threshold to 50?
+
+```{r}
+thresh_sum = 20
+thresh_detected = 10
+
+# classify cells to keep
+idc$keep = idc$sum > thresh_sum & idc$detected > thresh_detected
+
+# t-SNE plot
+p1 = plotDR(idc, dimred = "TSNE", colour = keep, alpha = 0.75) +
+  scale_color_brewer(palette = "Set1") +
+  labs(x = "TSNE1", y = "TSNE2") +
+  theme(legend.position = "bottom")
+# spatial plot
+p2 = plotSpatial(idc, colour = keep, alpha = 0.75) +
+  scale_color_brewer(palette = "Set1") +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Cells retained after QC filtering")
+```
+
+In practice, after poor quality cells are filtered out, we tend to see clearer separation of clusters in the t-SNE (or equivalent visualisations). We also notice that poor quality cells often seem like intermmediate states between clusters in these plots. Additionally, they tend to be randomly distributed in space. If they are concentrated in some sub-regions (as above - top left corner), it is usually due to technical reasons. In the above plot, we see a clear rectangular section that is of poor quality. It is unlikely that biology would be present in such a regular shape therefore we can use that region as a guide in selecting thresholds. Having selected the thresholds, we now apply them and remove the negative control probes from donwstream analysis.
+
+```{r}
+# apply the filtering
+idc = idc[, idc$keep]
+# remove negative probes
+idc = idc[!is_neg, ]
+```
+
+# Normalisation
+
+Above we plot the `sum`, which is commonly known as the library size, for the purpose of quality control. Assessing the library size is helpful in identifying poor quality cells. Beyond QC, variation in library size can affect donwstream analysis as it represents measurement bias. A gene may appear to be highly expressed in some cells simply because more measurements were sampled from the cell, and not because the gene is truly highly expressed. Whether it is sequencing-based or imaging-based transcriptomics, we are always sampling from the true pool of transcripts and are therefore likely to have library size variation.
+
+```{r}
+idc$logLS = log2(idc$sum + 1)
+plotSpatial(idc, colour = logLS) +
+  scale_colour_viridis_c(option = "F") +
+  theme(legend.position = "bottom")
+```
+
+To remove these library size biases, we perform library size normalisation. As measurements are independent in bulk and single-cell RNA-seq (reactions happen independently for each sample/cell), each cell or sample can be normalised independently by computing sample/cell-specific adjustment factors. Measurements are locally dependent in spatial transcriptomics datasets therefore library size effects confound biology [REF]. The plot above show this clearly as the technical effect of library size is already showing tissue structures. These can be due to various causes such as:
+
+1. The tissue structure in one region is more rigid, thereby making it difficult for reagents to permeate.
+1. Reagents distributed unevenly due to technical issues leading to a sub-region within a tissue region being under sampled.
+
+In both cases, each cell cannot be normalised independently as nearby cells are likely to experience similar technical effects. To tackle this, our team has developed the SpaNorm normalisation method that uses spatial dependence to decouple technical and biological effects. SpaNorm uses a spatially constrained regularised generalised linear model to model library size effects and subsequently adjust the data.
+
+![SpaNorm schematic](https://github.com/bhuvad/SpaNorm/blob/master/vignettes/SpaNormWorkflow.png)
+
+The key parameters for SpaNorm normalisation that need to be adjusted are:
+
+1. `sample.p` - This is the proportion of the data that is sub-sampled to fit the regularised GLM. As spatial transcriptomics datasets are very large, the model can be approximated using by sampling. In practice, we see that ~50,000 cells in a dataset with 500,000 cells works well enough under the assumption that all possible cellular states are sampled evenly across the tissue. This is likely to be true in most cases. Below we use half the cells to fit the model (you can tweak this to 1 to use all cells).
+1. `df.tps` - Spatial dependence is modelled using thin plate spline functions. This parameter controls the degrees of freedom (complexity) of the function. Complex functions will fit the data better but could overfit therefore in practice, we see that 6-10 degrees of freedom are generally good enough. If the degrees of freedom are increased, regularisation should also be increased (`lambda.a` parameter).
+
+```{r}
+set.seed(1000)
+# perform SpaNorm normalisation
+idc = SpaNorm(idc, sample.p = 0.5, df.tps = 6)
+```
+
+Above, the model is fit and the default adjustment, `logPAC`, is computed. Alternative adjustments such the mean biology (`meanbio`) can be computed as well (this will be faster as the fit does not need to be repeated).
+
+```{r}
+# compute mean biology
+idc_mean = SpaNorm(idc, adj.method = "meanbio")
+
+p1 = plotSpatial(idc, what = "expression", assay = "logcounts", colour = EPCAM, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  ggtitle("Normalised expression") +
+  theme(legend.position = "bottom")
+p2 = plotSpatial(idc_mean, what = "expression", assay = "logcounts", colour = EPCAM, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F") +
+  ggtitle("Mean from SpaNorm model") +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Proportion of nucleur transcripts")
+```
+
+# Cell typing
+
+Cell typing can be performed using various approaches. Most of these were developed for the analysis of single-cell RNA-seq datasets and port across well to spatial transcriptomics datasets. The two common strategies are reference-based and reference-free annotations. In the former, annotations are mapped across from a previously annotated dataset. For a thorough discussion on this topic, review the [Orchestrating Single-Cell Analysis (OSCA) with Bioconductor](https://bioconductor.org/books/release/OSCA/) book [REF]. Here, we use the SingleR package [REF] along with a reference breast cancer dataset [REF]. The processed dataset can be downloaded from [Curated Cancer Cell Atlas](https://www.weizmann.ac.il/sites/3CA/breast). 
+
+SingleR is a simple yet powerful algorithm that only requires a single prototype of what the cell type's expression profile should look like. As such, counts are aggregated (pseudobulked) across cells to form a reference dataset where a single expression vector is created for each cell type. Aggregation is performed using the `scater::aggregateAcrossCells` function. As the original dataset contains >96,000 cells, we only provide the aggregated counts for this workshop.
+
+```{r}
+# load reference dataset - Wu et al., Nat Genetics, 2021
+data(ref_wu)
+ref_wu
+# cell types in the reference dataset
+ref_wu$label.cell_type
+```
+
+```{r}
+# predict cell types using SingleR
+prediction = SingleR(test = idc, ref = ref_wu, labels = ref_wu$label.cell_type)
+# add prediction to the SpatialExperiment object
+idc$cell_type = prediction$labels
+```
+
+```{r}
+plotSpatial(idc, colour = cell_type, alpha = 0.75) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333") +
+  ggtitle("Mean from SpaNorm model") +
+  theme(legend.position = "bottom")
+```
+
+# Spatial domain identification
+
+Regions were annotated by an expert pathologist in our dataset. However, this is not always feasible, either due to access to a pathologist, or because the features are not visible in histology images alone. In such instances, a computational approach is required to identify spatial domains or cellular niches. These domains are generally, but not always, defined based on the homogeneity of biology. As this is still a developing area, there are many algorithms available, however, they generally fall within these three categories:
+
+1. Graph Neural Network (GNN) or Graph Convolutional Network (GCN) based algorithms.
+1. Probabilistic models based on markov random fields.
+1. Neighbourhood diffusion followed by graph-based clustering.
+
+We note that this is not a comprehensive survey of the literature but just a summary of the most popular methods in this space. The first two approaches can be very powerful, however, are time consuming and will not always scale with larger datasets. Diffusion followed by graph-clustering is a relatively simple, yet powerful approach that scales to large datasets. Banksy is one such algorithm that first shares information within a local neighbourhood, and then performs a standard single-cell RNA-seq inspired graph-based clustering to identify spatial domains [REF].
+
+The following key parameters determine the final clustering results:
+
+1. `lambda` - This controls the degree of information sharing in the neighbourhood (range of [0, 1]) where larger values result in higher diffusion and thereby smoother clusters.
+1. `resolution` - The resolution parameter for the graph-based clustering using either the Louvain or Leiden algorithms. Likewise, there are other parameters to control the graph-based clustering. The OSCA book discusses choices for these parameters in depth.
+1. `npcs` - The number of principal components to use to condense the feature space. The OSCA book discusses choices for this in depth.
+1. `k_geom` - The number of nearest neighbours used to share information. The authors recommend values within [15, 30] and note that variation is minimal within this range.
+
+```{r}
+# parameters
+lambda = 0.2
+npcs = 50
+k_geom = 30
+res = 0.8
+
+# compute the features required by Banksy
+idc = Banksy::computeBanksy(idc, assay_name = "logcounts", k_geom = k_geom)
+
+# compute PCA on the features
+set.seed(1000)
+idc = Banksy::runBanksyPCA(idc, lambda = lambda, npcs = npcs)
+
+# perform graph-based clusering
+set.seed(1000)
+idc = Banksy::clusterBanksy(idc, lambda = lambda, npcs = npcs, resolution = res)
+
+plotSpatial(idc, colour = clust_M0_lam0.2_k50_res0.8, alpha = 0.75) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333") +
+  ggtitle("Mean from SpaNorm model") +
+  theme(legend.position = "bottom")
+```
+
+Try varying the parameters to see how the clustering changes. Do note that the results are automatically stored in a new column in the colData. Unfortunately, the function does not allow specification of the new column name so the only approach is to look at the column names using `colnames(colData(idc))` and find the name of the new column (usually the last one) containing the clustering results.
+
+Looking back at the original annotations, we see that clusters 3 and 5 represent the DCIS and Invasive tumours respectively. Similarly, cluster 10 represents the blood vessel annotated by the pathologist. Computational analysis reveals additional structures present in the tissue that may differ only in the genomic measurements. Clustes 6 and 7 for instance seems to represent different structures in the stroma, some of which may be visible in the histology image but are intestive to label manually. We also find cluster 4 which represents a boundary of cells surrounding invasive and DCIS lesions.
+
+```{r}
+p1 = plotSpatial(idc, colour = clust_M0_lam0.2_k50_res0.8, alpha = 0.75) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333") +
+  ggtitle("Mean from SpaNorm model") +
+  guides(colour = guide_legend(nrow = 3)) +
+  theme(legend.position = "bottom")
+p2 = plotSpatial(idc, colour = region) +
+  scale_colour_brewer(palette = "Dark2") +
+  ggtitle("Pathology annotations") +
+  guides(colour = guide_legend(nrow = 3))
+p1 + p2 + plot_annotation(title = "Spatial domain identification")
+```
+
+# Differential expression
+
+nicheDE?
+
+# Functional analysis
+
+# Summary
+
+
+# Packages used {.unnumbered}
+
+This workflow depends on various packages from version `r BiocManager::version()` of the Bioconductor project, running on `r version$version.string` or higher. The complete list of the packages used for this workflow are shown below:
+
+```{r session_info}
+sessionInfo()
+```
+
+# Acknowledgments {.unnumbered}
+
+
+# References {.unnumbered}

@@ -1,0 +1,18 @@
+url: https://github.com/bhuvad/XeniumSpatialAnalysisWorkshop
+
+template:
+  params:
+    bootswatch: flatly
+    #ganalytics: UA-99999999-9
+
+home:
+  title: "XeniumSpatialAnalysisWorkshop"
+  type: inverse
+
+
+navbar:
+  right:
+   - icon: fa-github
+     href: https://github.com/bhuvad/XeniumSpatialAnalysisWorkshop
+
+

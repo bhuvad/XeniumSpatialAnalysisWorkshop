@@ -1,0 +1,58 @@
+Package: XeniumSpatialAnalysisWorkshop
+Title: Introduction to imaging-based spatial transcriptomics analysis
+Version: 0.99.0
+Authors@R: 
+    c(
+      person(
+        "Dharmesh",
+        "Bhuva",
+        "D.",
+        email = "bhuva.d@wehi.edu.au",
+        role = c("aut", "cre"),
+        comment = c(ORCID = '0000-0002-6398-9157')
+      ),
+      person(
+        "Chin Wee",
+        "Tan",
+        email = "cwtan@wehi.edu.au",
+        role = c("aut"),
+        comment = c(ORCID = '0000-0001-9695-7218')
+      )
+    )
+Description: This workflow package shows how a basic analysis of spatial transcriptomics datasets is performed to gain biological insight. 
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyDataCompression: bzip2
+Workflow: True
+biocViews: GeneExpressionWorkflow, Workflow
+VignetteBuilder: quarto
+Depends: 
+    R (>= 4.4.1)
+Imports: 
+    ggplot2,
+    GSEABase,
+    msigdb,
+    singscore,
+    SingleCellExperiment,
+    SpatialExperiment,
+    SpaNorm,
+    SummarizedExperiment,
+    standR,
+    vissE,
+    patchwork,
+    SingleR,
+    Banksy
+Suggests: 
+    pkgdown,
+    BiocStyle,
+    quarto,
+    prettydoc,
+    rmarkdown,
+    spelling
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Language: en-US
+URL: https://bhuvad.github.io/XeniumSpatialAnalysisWorkshop/
+BugReports: https://github.com/bhuvad/XeniumSpatialAnalysisWorkshop/issues
+DockerImage: bhuvad/xeniumspatialanalysisworkshop:latest
+LazyData: true
