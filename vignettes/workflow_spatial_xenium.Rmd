@@ -8,19 +8,15 @@ author:
     url: https://bhuvad.github.io/
     email: dharmesh.bhuva@adelaide.edu.au
     affiliation:
-      - id: sgc
-        name: SAiGENCI, The University of Adelaide
-      - id: sah
-        name: South Australian Health and Medical Research Institute (SAHMRI)
-      - id: weh
-        name: Walter and Eliza Hall Institute
+      - SAiGENCI, The University of Adelaide
+      - South Australian Health and Medical Research Institute (SAHMRI)
+      - Walter and Eliza Hall Institute
   - name: Chin Wee Tan
     orcid: 0000-0001-9695-7218
     email: cwtan@wehi.edu.au
     affiliation:
-      - ref: weh
-      - id: uom
-        name: The University of Melbourne
+      - Walter and Eliza Hall Institute
+      - The University of Melbourne
 output:
   prettydoc::html_pretty:
     theme: cayman
@@ -41,8 +37,6 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 keywords: spatial transcriptomics, cell typing, normalisation, signature scoring, visualisation
-abstract: >
-  Abstract
 ---
 
 <p>
@@ -84,7 +78,7 @@ Technology, data, and types of problems that can be answered
 
 # Loading prepared the data
 
-![Full IDC](inst/extdata/full_tissue.png)
+![Full IDC](https://raw.githubusercontent.com/bhuvad/XeniumSpatialAnalysisWorkshop/refs/heads/main/inst/extdata/full_tissue.png)
 
 x coordinate is in the interval (4800, 5800) and the y coordinate is in the interval (8500, 9500)
 
@@ -103,6 +97,8 @@ counts(idc)[1:5, 1:5]
 ```
 
 ```{r}
+# set default point size to 0.5 for this report
+update_geom_defaults(geom = "point", new = list(size = 0.5))
 plotSpatial(idc, colour = region) +
   scale_colour_brewer(palette = "Dark2")
 ```
@@ -180,7 +176,7 @@ However, we need to identify appropriate thresholds to classify poor quality cel
 
 ```{r}
 # t-SNE plot
-p1 = plotDR(idc, dimred = "TSNE", colour = sum, alpha = 0.75) +
+p1 = plotDR(idc, dimred = "TSNE", colour = sum, alpha = 0.75, size = 0.5) +
   scale_colour_viridis_c(option = "F") +
   labs(x = "TSNE1", y = "TSNE2") +
   theme(legend.position = "bottom")
@@ -193,7 +189,7 @@ p1 + p2 + plot_annotation(title = "Sum (library size)")
 
 ```{r}
 # t-SNE plot
-p1 = plotDR(idc, dimred = "TSNE", colour = detected, alpha = 0.75) +
+p1 = plotDR(idc, dimred = "TSNE", colour = detected, alpha = 0.75, size = 0.5) +
   scale_colour_viridis_c(option = "F") +
   labs(x = "TSNE1", y = "TSNE2") +
   theme(legend.position = "bottom")
@@ -206,7 +202,7 @@ p1 + p2 + plot_annotation(title = "Detected (number of genes expressed)")
 
 ```{r}
 # t-SNE plot
-p1 = plotDR(idc, dimred = "TSNE", colour = qv, alpha = 0.75) +
+p1 = plotDR(idc, dimred = "TSNE", colour = qv, alpha = 0.75, size = 0.5) +
   scale_colour_viridis_c(option = "F") +
   labs(x = "TSNE1", y = "TSNE2") +
   theme(legend.position = "bottom")
@@ -219,7 +215,7 @@ p1 + p2 + plot_annotation(title = "Quality score")
 
 ```{r}
 # t-SNE plot
-p1 = plotDR(idc, dimred = "TSNE", colour = overlaps_nucleus, alpha = 0.75) +
+p1 = plotDR(idc, dimred = "TSNE", colour = overlaps_nucleus, alpha = 0.75, size = 0.5) +
   scale_colour_viridis_c(option = "F") +
   labs(x = "TSNE1", y = "TSNE2") +
   theme(legend.position = "bottom")
@@ -245,7 +241,7 @@ thresh_detected = 10
 idc$keep = idc$sum > thresh_sum & idc$detected > thresh_detected
 
 # t-SNE plot
-p1 = plotDR(idc, dimred = "TSNE", colour = keep, alpha = 0.75) +
+p1 = plotDR(idc, dimred = "TSNE", colour = keep, alpha = 0.75, size = 0.5) +
   scale_color_brewer(palette = "Set1") +
   labs(x = "TSNE1", y = "TSNE2") +
   theme(legend.position = "bottom")
@@ -283,7 +279,7 @@ To remove these library size biases, we perform library size normalisation. As m
 
 In both cases, each cell cannot be normalised independently as nearby cells are likely to experience similar technical effects. To tackle this, our team has developed the SpaNorm normalisation method that uses spatial dependence to decouple technical and biological effects. SpaNorm uses a spatially constrained regularised generalised linear model to model library size effects and subsequently adjust the data.
 
-![SpaNorm schematic](https://github.com/bhuvad/SpaNorm/blob/master/vignettes/SpaNormWorkflow.png)
+![SpaNorm schematic](https://raw.githubusercontent.com/bhuvad/SpaNorm/refs/heads/master/vignettes/SpaNormWorkflow.png)
 
 The key parameters for SpaNorm normalisation that need to be adjusted are:
 
@@ -377,7 +373,7 @@ set.seed(1000)
 idc = Banksy::clusterBanksy(idc, lambda = lambda, npcs = npcs, resolution = res)
 
 plotSpatial(idc, colour = clust_M0_lam0.2_k50_res0.8, alpha = 0.75) +
-  scale_colour_brewer(palette = "Paired", na.value = "#333333") +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
   ggtitle("Mean from SpaNorm model") +
   theme(legend.position = "bottom")
 ```
@@ -388,7 +384,7 @@ Looking back at the original annotations, we see that clusters 3 and 5 represent
 
 ```{r}
 p1 = plotSpatial(idc, colour = clust_M0_lam0.2_k50_res0.8, alpha = 0.75) +
-  scale_colour_brewer(palette = "Paired", na.value = "#333333") +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
   ggtitle("Mean from SpaNorm model") +
   guides(colour = guide_legend(nrow = 3)) +
   theme(legend.position = "bottom")
