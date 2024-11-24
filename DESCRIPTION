@@ -41,7 +41,8 @@ Imports:
     vissE,
     patchwork,
     SingleR,
-    Banksy
+    Banksy,
+    scater
 Suggests: 
     pkgdown,
     BiocStyle,
