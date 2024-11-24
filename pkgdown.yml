@@ -1,8 +1,9 @@
 pandoc: 3.1.11
 pkgdown: 2.1.1
 pkgdown_sha: ~
-articles: {}
-last_built: 2024-11-24T05:22Z
+articles:
+  workflow_spatial_xenium: workflow_spatial_xenium.html
+last_built: 2024-11-24T06:42Z
 urls:
   reference: https://github.com/bhuvad/XeniumSpatialAnalysisWorkshop/reference
   article: https://github.com/bhuvad/XeniumSpatialAnalysisWorkshop/articles
