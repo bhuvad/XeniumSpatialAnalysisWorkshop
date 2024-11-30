@@ -117,13 +117,21 @@ version</strong>: 0.99.0</p>
 </h2>
 </div>
 <div class="section level2">
-<h2 id="loading-prepared-the-data">Loading prepared the data<a class="anchor" aria-label="anchor" href="#loading-prepared-the-data"></a>
+<h2 id="loading-prepared-data">Loading prepared data<a class="anchor" aria-label="anchor" href="#loading-prepared-data"></a>
 </h2>
+<p>The data we will use in this workshop is from the 10x Xenium
+platform. Since the objective of this workshop is to introduce you to
+spatial transcriptomics analysis, we do not work with the full dataset,
+which contains over 500,000 cells and instead opt to work with a smaller
+subset of the sample. This region contains interesting features and is
+therefore enough to showcase a complete spatial transcriptomics analysis
+workflow. The data used in this workshop is a window with the x
+coordinate in the interval (4800, 5800) and the y coordinate in the
+interval (8500, 9500). This window is shown in the context of the full
+tissue below.</p>
 <div class="float">
 <img src="https://raw.githubusercontent.com/bhuvad/XeniumSpatialAnalysisWorkshop/refs/heads/main/inst/extdata/full_tissue.png" alt="Full IDC"><div class="figcaption">Full IDC</div>
 </div>
-<p>x coordinate is in the interval (4800, 5800) and the y coordinate is
-in the interval (8500, 9500)</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">idc</span><span class="op">)</span></span>
 <span><span class="co"># preview object</span></span>
@@ -224,7 +232,7 @@ will not scale for the purpose of this workshop. If interested, run the
 code below on your own laptop.</p>
 </blockquote>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co">## DO NOT RUN during the workshop as the data are large</span></span>
+<code class="sourceCode R"><span><span class="co">## DO NOT RUN during the workshop as the data are large and could crash your session</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st">"ExperimentHub"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"ExperimentHub"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
@@ -329,10 +337,12 @@ technologies are variable, there are no standards as of yet for
 filtering. For instance, immune cells will always have smaller library
 sizes and potentially a smaller number of genes expressed in a targetted
 panel as each cell type may be represented by a few marker genes.
-Desipte the lack of standards, the extreme cases where cells express
-fewer than 10 genes and have fewer than 10-20 detections are clearly of
-poor quality. As such, we can start with these thresholds and adjust
-based on other metrics and visualisations.</p>
+Additionally, these cells are smaller in size therefore could be
+filtered out using an area-based filter. Desipte the lack of standards,
+the extreme cases where cells express fewer than 10 genes and have fewer
+than 10-20 detections are clearly of poor quality. As such, we can start
+with these thresholds and adjust based on other metrics and
+visualisations.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># t-SNE plot</span></span>
 <span><span class="va">p1</span> <span class="op">=</span> <span class="fu">plotDR</span><span class="op">(</span><span class="va">idc</span>, dimred <span class="op">=</span> <span class="st">"TSNE"</span>, colour <span class="op">=</span> <span class="va">sum</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
@@ -371,6 +381,18 @@ based on other metrics and visualisations.</p>
 <p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-10-1.png" width="700"></p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># t-SNE plot</span></span>
+<span><span class="va">p1</span> <span class="op">=</span> <span class="fu">plotDR</span><span class="op">(</span><span class="va">idc</span>, dimred <span class="op">=</span> <span class="st">"TSNE"</span>, colour <span class="op">=</span> <span class="va">subsets_neg_percent</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_colour_viridis_c</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"F"</span>, limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>, oob <span class="op">=</span> <span class="fu">scales</span><span class="fu">::</span><span class="va"><a href="https://scales.r-lib.org/reference/oob.html" class="external-link">squish</a></span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"TSNE1"</span>, y <span class="op">=</span> <span class="st">"TSNE2"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
+<span><span class="co"># spatial plot</span></span>
+<span><span class="va">p2</span> <span class="op">=</span> <span class="fu">plotSpatial</span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">subsets_neg_percent</span>, alpha <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">scale_colour_viridis_c</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"F"</span>, limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>, oob <span class="op">=</span> <span class="fu">scales</span><span class="fu">::</span><span class="va"><a href="https://scales.r-lib.org/reference/oob.html" class="external-link">squish</a></span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Proportion of negative control probes"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># t-SNE plot</span></span>
 <span><span class="va">p1</span> <span class="op">=</span> <span class="fu">plotDR</span><span class="op">(</span><span class="va">idc</span>, dimred <span class="op">=</span> <span class="st">"TSNE"</span>, colour <span class="op">=</span> <span class="va">overlaps_nucleus</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">scale_colour_viridis_c</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"F"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"TSNE1"</span>, y <span class="op">=</span> <span class="st">"TSNE2"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -379,8 +401,8 @@ based on other metrics and visualisations.</p>
 <span><span class="va">p2</span> <span class="op">=</span> <span class="fu">plotSpatial</span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">overlaps_nucleus</span>, alpha <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">scale_colour_viridis_c</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"F"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Proportion of nucleur transcripts"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Proportion of nuclear transcripts"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-12-1.png" width="700"></p>
 <p>Having visualised the quality metrics and their distrition across
 space and the genomic dimensions, we can now begin to test threshold
 values. We want to remove low quality cells but we have to be careful
@@ -393,7 +415,7 @@ under- filtering.</p>
 100?</li>
 <li>What about setting the <code>detected</code> threshold to 50?</li>
 </ul>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">thresh_sum</span> <span class="op">=</span> <span class="fl">20</span></span>
 <span><span class="va">thresh_detected</span> <span class="op">=</span> <span class="fl">10</span></span>
 <span></span>
@@ -412,7 +434,7 @@ under- filtering.</p>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">guides</span><span class="op">(</span>colour <span class="op">=</span> <span class="fu">guide_legend</span><span class="op">(</span>override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Cells retained after QC filtering"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-12-1.png" width="700"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
 <p>In practice, after poor quality cells are filtered out, we tend to
 see clearer separation of clusters in the t-SNE (or equivalent
 visualisations). We also notice that poor quality cells often seem like
@@ -424,11 +446,22 @@ that is of poor quality. It is unlikely that biology would be present in
 such a regular shape therefore we can use that region as a guide in
 selecting thresholds. Having selected the thresholds, we now apply them
 and remove the negative control probes from donwstream analysis.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># apply the filtering</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="va">idc</span><span class="op">[</span>, <span class="va">idc</span><span class="op">$</span><span class="va">keep</span><span class="op">]</span></span>
 <span><span class="co"># remove negative probes</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="va">idc</span><span class="op">[</span><span class="op">!</span><span class="va">is_neg</span>, <span class="op">]</span></span></code></pre></div>
+<blockquote>
+<p>As these technologies are still emerging, all quality control metrics
+should be evaluated on a case-by-case basis depending on the platform,
+panel set, and tissue. Knowing the biology to expect or what is
+definitely NOT biology helps in making these decisions. As any
+experienced bioinformatician will tell you, you will vary these
+thresholds a few times throughout your analysis because you learn more
+about the data, biology, and platform as you analyse the data. This
+cyclical approach can introduce biases so always rely on multiple
+avenues of evidence before changing parameters.</p>
+</blockquote>
 </div>
 <div class="section level2">
 <h2 id="normalisation">Normalisation<a class="anchor" aria-label="anchor" href="#normalisation"></a>
@@ -443,12 +476,12 @@ because the gene is truly highly expressed. Whether it is
 sequencing-based or imaging-based transcriptomics, we are always
 sampling from the true pool of transcripts and are therefore likely to
 have library size variation.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">idc</span><span class="op">$</span><span class="va">logLS</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log2</a></span><span class="op">(</span><span class="va">idc</span><span class="op">$</span><span class="va">sum</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu">plotSpatial</span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">logLS</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">scale_colour_viridis_c</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"F"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-15-1.png" width="700"></p>
 <p>To remove these library size biases, we perform library size
 normalisation. As measurements are independent in bulk and single-cell
 RNA-seq (reactions happen independently for each sample/cell), each cell
@@ -494,15 +527,15 @@ freedom are generally good enough. If the degrees of freedom are
 increased, regularisation should also be increased
 (<code>lambda.a</code> parameter).</li>
 </ol>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="co"># perform SpaNorm normalisation</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="fu">SpaNorm</span><span class="op">(</span><span class="va">idc</span>, sample.p <span class="op">=</span> <span class="fl">0.5</span>, df.tps <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></code></pre></div>
 <p>Above, the model is fit and the default adjustment,
-<code>logPAC</code>, is computed. Alternative adjustments such the mean
-biology (<code>meanbio</code>) can be computed as well (this will be
-faster as the fit does not need to be repeated).</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code>logPAC</code>, is computed. Alternative adjustments such as the
+mean biology (<code>meanbio</code>) can be computed as well (this will
+be faster as the fit does not need to be repeated).</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># compute mean biology</span></span>
 <span><span class="va">idc_mean</span> <span class="op">=</span> <span class="fu">SpaNorm</span><span class="op">(</span><span class="va">idc</span>, adj.method <span class="op">=</span> <span class="st">"meanbio"</span><span class="op">)</span></span>
 <span></span>
@@ -514,8 +547,13 @@ faster as the fit does not need to be repeated).</p>
 <span>  <span class="fu">scale_colour_viridis_c</span><span class="op">(</span>option <span class="op">=</span> <span class="st">"F"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Mean from SpaNorm model"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
-<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Proportion of nucleur transcripts"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Proportion of nuclear transcripts"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-17-1.png" width="700"></p>
+<p><em>EPCAM</em> is an epithelial cell marker gene that will also be
+expressed in breast cancer cells that are of epithelial origin. The
+SpaNorm model correctly models the regions where the cancer cells exist
+(mean) and is able to normalise technical effects without affecting the
+biology.</p>
 </div>
 <div class="section level2">
 <h2 id="cell-typing">Cell typing<a class="anchor" aria-label="anchor" href="#cell-typing"></a>
@@ -538,7 +576,7 @@ cell type. Aggregation is performed using the
 <code><a href="https://rdrr.io/pkg/scuttle/man/aggregateAcrossCells.html" class="external-link">scater::aggregateAcrossCells</a></code> function. As the original
 dataset contains &gt;96,000 cells, we only provide the aggregated counts
 for this workshop.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># load reference dataset - Wu et al., Nat Genetics, 2021</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ref_wu</span><span class="op">)</span></span>
 <span><span class="va">ref_wu</span></span></code></pre></div>
@@ -553,24 +591,24 @@ for this workshop.</p>
 <span><span class="co">## reducedDimNames(0):</span></span>
 <span><span class="co">## mainExpName: NULL</span></span>
 <span><span class="co">## altExpNames(0):</span></span></code></pre>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># cell types in the reference dataset</span></span>
 <span><span class="va">ref_wu</span><span class="op">$</span><span class="va">label.cell_type</span></span></code></pre></div>
 <pre><code><span><span class="co">##  [1] "B_cell"      "Dendritic"   "Endothelial" "Epithelial"  "Fibroblast" </span></span>
 <span><span class="co">##  [6] "Macrophage"  "Malignant"   "Monocyte"    "Myeloid"     "NK_cell"    </span></span>
 <span><span class="co">## [11] "Pericyte"    "Plasmablast" "T_cell"</span></span></code></pre>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># predict cell types using SingleR</span></span>
 <span><span class="va">prediction</span> <span class="op">=</span> <span class="fu">SingleR</span><span class="op">(</span>test <span class="op">=</span> <span class="va">idc</span>, ref <span class="op">=</span> <span class="va">ref_wu</span>, labels <span class="op">=</span> <span class="va">ref_wu</span><span class="op">$</span><span class="va">label.cell_type</span><span class="op">)</span></span>
 <span><span class="co"># add prediction to the SpatialExperiment object</span></span>
 <span><span class="va">idc</span><span class="op">$</span><span class="va">cell_type</span> <span class="op">=</span> <span class="va">prediction</span><span class="op">$</span><span class="va">labels</span></span></code></pre></div>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plotSpatial</span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">cell_type</span>, alpha <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">scale_colour_brewer</span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Paired"</span>, na.value <span class="op">=</span> <span class="st">"#333333"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Mean from SpaNorm model"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">guides</span><span class="op">(</span>colour <span class="op">=</span> <span class="fu">guide_legend</span><span class="op">(</span>override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-19-1.png" width="700"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
 </div>
 <div class="section level2">
 <h2 id="spatial-domain-identification">Spatial domain identification<a class="anchor" aria-label="anchor" href="#spatial-domain-identification"></a>
@@ -620,7 +658,7 @@ depth.</li>
 information. The authors recommend values within [15, 30] and note that
 variation is minimal within this range.</li>
 </ol>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># parameters</span></span>
 <span><span class="va">lambda</span> <span class="op">=</span> <span class="fl">0.2</span></span>
 <span><span class="va">npcs</span> <span class="op">=</span> <span class="fl">50</span></span>
@@ -646,7 +684,7 @@ variation is minimal within this range.</li>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Mean from SpaNorm model"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">guides</span><span class="op">(</span>colour <span class="op">=</span> <span class="fu">guide_legend</span><span class="op">(</span>override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
 <p>Try varying the parameters to see how the clustering changes. Do note
 that the results are automatically stored in a new column in the
 colData. Unfortunately, the function does not allow specification of the
@@ -664,7 +702,7 @@ for instance seems to represent different structures in the stroma, some
 of which may be visible in the histology image but are intestive to
 label manually. We also find cluster 4 which represents a boundary of
 cells surrounding invasive and DCIS lesions.</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p1</span> <span class="op">=</span> <span class="fu">plotSpatial</span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">predicted_region</span>, alpha <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">scale_colour_brewer</span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Paired"</span>, na.value <span class="op">=</span> <span class="st">"#333333"</span>, name <span class="op">=</span> <span class="st">"cluster"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Mean from SpaNorm model"</span><span class="op">)</span> <span class="op">+</span></span>
@@ -675,7 +713,7 @@ cells surrounding invasive and DCIS lesions.</p>
 <span>  <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Pathology annotations"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">guides</span><span class="op">(</span>colour <span class="op">=</span> <span class="fu">guide_legend</span><span class="op">(</span>nrow <span class="op">=</span> <span class="fl">3</span>, override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Spatial domain identification"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-21-1.png" width="700"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-22-1.png" width="700"></p>
 </div>
 <div class="section level2">
 <h2 id="differential-expression">Differential expression<a class="anchor" aria-label="anchor" href="#differential-expression"></a>
@@ -694,7 +732,7 @@ cell types such as fibroblasts. We may be interested in identifying the
 differences in fibroblasts that are in close proximity to cancer cells
 as opposed to the distant ones. We can identify the genes that are
 associated with these changes below.</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># create clusters to study how cell types vary across domains</span></span>
 <span><span class="va">clusters</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">idc</span><span class="op">$</span><span class="va">cell_type</span>, <span class="va">idc</span><span class="op">$</span><span class="va">predicted_region</span>, sep <span class="op">=</span> <span class="st">"_"</span><span class="op">)</span></span>
 <span><span class="va">clusters</span> <span class="op">|&gt;</span></span>
@@ -727,7 +765,7 @@ could be used to perform analysis on a single tissue, however, it would
 also be more robust with biological replicates. This tool is outside the
 scope of this introductory workshop therefore is not covered.</p>
 </blockquote>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MarioniLab/scran/" class="external-link">scran</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># identify markers</span></span>
@@ -737,12 +775,12 @@ scope of this introductory workshop therefore is not covered.</p>
 <span><span class="co">## names(2): Fibroblast_3 Malignant_2</span></span></code></pre>
 <p>Below we compare the malignant (cancer) cells from region 2
 (invasive) against those from region 5 (DCIS). Investigating and
-visialising the top genes shows that <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS" class="external-link">DHRS</a>
-and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=MUC6" class="external-link">MUC6</a>
-are up-regulated in invasive cancer cells while <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=GATA3" class="external-link">GATA3</a>
-and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=FLNB" class="external-link">FLNB</a>
+visialising the top genes shows that <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS" class="external-link"><em>DHRS</em></a>
+and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=MUC6" class="external-link"><em>MUC6</em></a>
+are up-regulated in invasive cancer cells while <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=GATA3" class="external-link"><em>GATA3</em></a>
+and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=FLNB" class="external-link"><em>FLNB</em></a>
 are moderately up-regulated in DCIS cancer cells.</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://bioconductor.org/packages/scater/" class="external-link">scater</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># study markers of Malignant_2</span></span>
@@ -758,7 +796,7 @@ are moderately up-regulated in DCIS cancer cells.</p>
 <span><span class="co">## SERHL2        1.13927      0.238138      0.629426       0.183949</span></span>
 <span><span class="co">## MUC6          1.04731      0.189133      0.572777       0.141997</span></span>
 <span><span class="co">## ANKRD30A      3.60635      1.968429      0.988985       0.635830</span></span></code></pre>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plotExpression.html" class="external-link">plotExpression</a></span><span class="op">(</span><span class="va">idc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">ordered_malignant</span><span class="op">)</span>, <span class="fl">9</span><span class="op">)</span>,</span>
 <span>  x <span class="op">=</span> <span class="st">"predicted_region"</span>,</span>
@@ -769,15 +807,15 @@ are moderately up-regulated in DCIS cancer cells.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_colour_brewer</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Paired"</span>, na.value <span class="op">=</span> <span class="st">"#333333"</span>, name <span class="op">=</span> <span class="st">"cluster"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guides.html" class="external-link">guides</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guide_legend.html" class="external-link">guide_legend</a></span><span class="op">(</span>override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-24-1.png" width="768"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-25-1.png" width="768"></p>
 <p>Next we compare the fibroblasts from region 6 (stroma) against those
 from region 3 (tumour-adjacent). Investigating and visialising the top
-genes shows that <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=LUM" class="external-link">LUM</a>
-and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=POSTN" class="external-link">POSTN</a>
-are up-regulated in stromal fibroblasts while <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=MMP11" class="external-link">MMP11</a>
-and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=AQP1" class="external-link">AQP1</a>
+genes shows that <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=LUM" class="external-link"><em>LUM</em></a>
+and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=POSTN" class="external-link"><em>POSTN</em></a>
+are up-regulated in stromal fibroblasts while <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=MMP11" class="external-link"><em>MMP11</em></a>
+and <a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=AQP1" class="external-link"><em>AQP1</em></a>
 are up-regulated in the tumour-adjacent fibroblasts.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># study markers of Malignant_2</span></span>
 <span><span class="va">chosen_fibroblasts</span> <span class="op">&lt;-</span> <span class="va">marker.info</span><span class="op">[[</span><span class="st">"Fibroblast_3"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="va">ordered_fibroblasts</span> <span class="op">&lt;-</span> <span class="va">chosen_fibroblasts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">chosen_fibroblasts</span><span class="op">$</span><span class="va">rank.AUC</span><span class="op">)</span>, <span class="op">]</span></span>
@@ -791,7 +829,7 @@ are up-regulated in the tumour-adjacent fibroblasts.</p>
 <span><span class="co">## POSTN     2.296114      1.318836      0.872521      0.4802572</span></span>
 <span><span class="co">## AEBP1     1.634483      1.231478      0.824363      0.4990967</span></span>
 <span><span class="co">## AQP1      0.673749      0.233876      0.410765      0.1800684</span></span></code></pre>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plotExpression.html" class="external-link">plotExpression</a></span><span class="op">(</span><span class="va">idc</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">ordered_fibroblasts</span><span class="op">)</span>, <span class="fl">9</span><span class="op">)</span>,</span>
 <span>  x <span class="op">=</span> <span class="st">"predicted_region"</span>,</span>
@@ -802,7 +840,7 @@ are up-regulated in the tumour-adjacent fibroblasts.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_colour_brewer</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Paired"</span>, na.value <span class="op">=</span> <span class="st">"#333333"</span>, name <span class="op">=</span> <span class="st">"cluster"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guides.html" class="external-link">guides</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guide_legend.html" class="external-link">guide_legend</a></span><span class="op">(</span>override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-25-1.png" width="768"></p>
+<p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-26-1.png" width="768"></p>
 </div>
 <div class="section level2">
 <h2 id="functional-analysis">Functional analysis<a class="anchor" aria-label="anchor" href="#functional-analysis"></a>
@@ -840,7 +878,7 @@ analysis on the factor loadings to explain the biological processes.</p>
 Bioconductor project, running on R version 4.4.2 (2024-10-31) or higher.
 The complete list of the packages used for this workflow are shown
 below:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## R version 4.4.2 (2024-10-31)</span></span>
 <span><span class="co">## Platform: x86_64-pc-linux-gnu</span></span>
