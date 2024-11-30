@@ -100,7 +100,9 @@ counts(idc)[1:5, 1:5]
 # set default point size to 0.5 for this report
 update_geom_defaults(geom = "point", new = list(size = 0.5))
 plotSpatial(idc, colour = region) +
-  scale_colour_brewer(palette = "Dark2")
+  scale_colour_brewer(palette = "Dark2") +
+  # improve legend visibility
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 ```
 
 For users interested in analysing the whole dataset, it can be obtained using the code below.
@@ -244,11 +246,13 @@ idc$keep = idc$sum > thresh_sum & idc$detected > thresh_detected
 p1 = plotDR(idc, dimred = "TSNE", colour = keep, alpha = 0.75, size = 0.5) +
   scale_color_brewer(palette = "Set1") +
   labs(x = "TSNE1", y = "TSNE2") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 # spatial plot
 p2 = plotSpatial(idc, colour = keep, alpha = 0.75) +
   scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 p1 + p2 + plot_annotation(title = "Cells retained after QC filtering")
 ```
 
@@ -334,7 +338,8 @@ idc$cell_type = prediction$labels
 plotSpatial(idc, colour = cell_type, alpha = 0.75) +
   scale_colour_brewer(palette = "Paired", na.value = "#333333") +
   ggtitle("Mean from SpaNorm model") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 ```
 
 # Spatial domain identification
@@ -372,37 +377,109 @@ idc = Banksy::runBanksyPCA(idc, lambda = lambda, npcs = npcs)
 set.seed(1000)
 idc = Banksy::clusterBanksy(idc, lambda = lambda, npcs = npcs, resolution = res)
 
-plotSpatial(idc, colour = clust_M0_lam0.2_k50_res0.8, alpha = 0.75) +
+# store to the column predicted_region
+idc$predicted_region = idc$`clust_M0_lam0.2_k50_res0.8`
+
+plotSpatial(idc, colour = predicted_region, alpha = 0.75) +
   scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
   ggtitle("Mean from SpaNorm model") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 ```
 
-Try varying the parameters to see how the clustering changes. Do note that the results are automatically stored in a new column in the colData. Unfortunately, the function does not allow specification of the new column name so the only approach is to look at the column names using `colnames(colData(idc))` and find the name of the new column (usually the last one) containing the clustering results.
+Try varying the parameters to see how the clustering changes. Do note that the results are automatically stored in a new column in the colData. Unfortunately, the function does not allow specification of the new column name so the only approach is to look at the column names using `colnames(colData(idc))` and find the name of the new column (usually the last one) containing the clustering results. We then store these to a column of our choosing to make it easier to reference it.
 
 Looking back at the original annotations, we see that clusters 3 and 5 represent the DCIS and Invasive tumours respectively. Similarly, cluster 10 represents the blood vessel annotated by the pathologist. Computational analysis reveals additional structures present in the tissue that may differ only in the genomic measurements. Clustes 6 and 7 for instance seems to represent different structures in the stroma, some of which may be visible in the histology image but are intestive to label manually. We also find cluster 4 which represents a boundary of cells surrounding invasive and DCIS lesions.
 
 ```{r}
-p1 = plotSpatial(idc, colour = clust_M0_lam0.2_k50_res0.8, alpha = 0.75) +
+p1 = plotSpatial(idc, colour = predicted_region, alpha = 0.75) +
   scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
   ggtitle("Mean from SpaNorm model") +
-  guides(colour = guide_legend(nrow = 3)) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 3, override.aes = list(shape = 15, size = 5)))
 p2 = plotSpatial(idc, colour = region) +
   scale_colour_brewer(palette = "Dark2") +
   ggtitle("Pathology annotations") +
-  guides(colour = guide_legend(nrow = 3))
+  guides(colour = guide_legend(nrow = 3, override.aes = list(shape = 15, size = 5)))
 p1 + p2 + plot_annotation(title = "Spatial domain identification")
 ```
 
 # Differential expression
 
-nicheDE?
+Cell type identification or clustering allows us to identify the different cellular states in a biological system. The power of spatial molecular datasets is that we can study how cellular states change in response to different structures in the tissue. For instance, in our tissue we see that there are two different types of cancer lesions, ductal carcinoma in situ and invasive. Cancer cells in the latter lesion tend to me aggresive and can spread more than those in the DCIS region. We would be interested in knowning the biological processes that make this happen.
+
+Additionally, cancer cells interact with their environment including cell types such as fibroblasts. We may be interested in identifying the differences in fibroblasts that are in close proximity to cancer cells as opposed to the distant ones. We can identify the genes that are associated with these changes below.
+
+```{r}
+# create clusters to study how cell types vary across domains
+clusters = paste(idc$cell_type, idc$predicted_region, sep = "_")
+clusters |>
+  table() |>
+  sort() |> 
+  tail(10)
+```
+
+We see that the two largest clusters capture malignant cells in spatial domains 2 and 5 which align with the invasive and DCIS regions respectively based on the pathology annotations. We also see that though most of the fibroblasts are dispersed in the stroma (region 6), those that are closer to the cancer lesions are clustered in region 3. We would be interested in studying the difference between these and understanding whether they contain features that promote the tumour.
+
+> The analysis below is only meant to be a demonstration of the potential of spatial transcriptomics data. A proper statistical analysis would require replicate tissue samples from across different patients. In such a case, we would aggregate transcript counts across cell types using the `scater::sumCountsAcrossCells` to create pseudo-bulk samples, and follow up with a differential expression analysis using the [`edgeR`](https://doi.org/10.12688/f1000research.8987.2) or [`limma`](https://doi.org/10.12688/f1000research.9005.3) pipelines. Alternatively, a more advanced tool such as [`nicheDE`](https://doi.org/10.1186/s13059-023-03159-6) could be used to perform analysis on a single tissue, however, it would also be more robust with biological replicates. This tool is outside the scope of this introductory workshop therefore is not covered.
+
+```{r}
+library(scran)
+
+# identify markers
+marker.info = scoreMarkers(idc, clusters, pairings = list(c("Malignant_2", "Fibroblast_3"), c("Malignant_5", "Fibroblast_6")))
+marker.info
+```
+
+Below we compare the malignant (cancer) cells from region 2 (invasive) against those from region 5 (DCIS). Investigating and visialising the top genes shows that [DHRS](https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS) and [MUC6](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MUC6) are up-regulated in invasive cancer cells while [GATA3](https://www.genecards.org/cgi-bin/carddisp.pl?gene=GATA3) and [FLNB](https://www.genecards.org/cgi-bin/carddisp.pl?gene=FLNB) are moderately up-regulated in DCIS cancer cells.
+
+```{r fig.width=8, fig.height=8}
+library(scater)
+
+# study markers of Malignant_2
+chosen_malignant <- marker.info[["Malignant_2"]]
+ordered_malignant <- chosen_malignant[order(chosen_malignant$rank.AUC), ]
+head(ordered_malignant[, 1:4])
+
+plotExpression(idc,
+  features = head(rownames(ordered_malignant), 9),
+  x = "predicted_region",
+  colour_by = "predicted_region",
+  ncol = 3
+) +
+  geom_vline(xintercept = c(2, 5), lwd = 0.1, lty = 2) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
+```
+
+Next we compare the fibroblasts from region 6 (stroma) against those from region 3 (tumour-adjacent). Investigating and visialising the top genes shows that [LUM](https://www.genecards.org/cgi-bin/carddisp.pl?gene=LUM) and [POSTN](https://www.genecards.org/cgi-bin/carddisp.pl?gene=POSTN) are up-regulated in stromal fibroblasts while [MMP11](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MMP11) and [AQP1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=AQP1) are up-regulated in the tumour-adjacent fibroblasts.
+
+```{r fig.width=8, fig.height=8}
+# study markers of Malignant_2
+chosen_fibroblasts <- marker.info[["Fibroblast_3"]]
+ordered_fibroblasts <- chosen_fibroblasts[order(chosen_fibroblasts$rank.AUC), ]
+head(ordered_fibroblasts[, 1:4])
+
+plotExpression(idc,
+  features = head(rownames(ordered_fibroblasts), 9),
+  x = "predicted_region",
+  colour_by = "predicted_region",
+  ncol = 3
+) +
+  geom_vline(xintercept = c(3, 6), lwd = 0.1, lty = 2) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
+```
 
 # Functional analysis
 
-# Summary
+The example dataset used here was generated using the 10x Xenium platform that measured 380 genes. More recent versions of this platform and competing platforms such as the NanoString CosMx are now providing around 5000 genes (soon whole transcriptome as well!). It is relatively easy to scan through the strongest differentially expressed genes from a list of at most 380 genes to understand the processes underpinning the system. With larger panel sizes, we need computational tools to perform such analyses, often referred to as gene-set enrichment analysis or functional analysis. As this is an extensive topic, it is not covered in depth in this workshop, however, we have previously developed a [workshop on gene-set enrichment analysis](https://davislaboratory.github.io/GenesetAnalysisWorkflow/) and refer the attendees to that if they are interested. A non-programmatic interface of some of the tools in our workshop can be accessed through [vissE.cloud](https://visse.cloud/).
 
+> Optional: You can also explore the full dataset from this workshop on vissE.cloud through the following [link](https://visse.cloud/galleryexample/xenium_V1FFPEHumanBreastIDCWithAddon_PCA). This exploratory analysis performs principal components analysis (PCA) or non-negative matrix factorisation (NMF) on the dataset to identify macroscopic biological programs. It then performs gene-set enrichment analysis on the factor loadings to explain the biological processes.
+
+# Summary
 
 # Packages used {.unnumbered}
 

@@ -42,7 +42,8 @@ Imports:
     patchwork,
     SingleR,
     Banksy,
-    scater
+    scater,
+    scran
 Suggests: 
     pkgdown,
     BiocStyle,
