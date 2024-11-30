@@ -76,11 +76,11 @@ Technology, data, and types of problems that can be answered
 
 # Description of the biological problem
 
-# Loading prepared the data
+# Loading prepared data
+
+The data we will use in this workshop is from the 10x Xenium platform. Since the objective of this workshop is to introduce you to spatial transcriptomics analysis, we do not work with the full dataset, which contains over 500,000 cells and instead opt to work with a smaller subset of the sample. This region contains interesting features and is therefore enough to showcase a complete spatial transcriptomics analysis workflow. The data used in this workshop is a window with the x coordinate in the interval (4800, 5800) and the y coordinate in the interval (8500, 9500). This window is shown in the context of the full tissue below.
 
 ![Full IDC](https://raw.githubusercontent.com/bhuvad/XeniumSpatialAnalysisWorkshop/refs/heads/main/inst/extdata/full_tissue.png)
-
-x coordinate is in the interval (4800, 5800) and the y coordinate is in the interval (8500, 9500)
 
 ```{r}
 data(idc)
@@ -110,7 +110,7 @@ For users interested in analysing the whole dataset, it can be obtained using th
 > Please note that the full dataset contains over 500,000 cells and will not scale for the purpose of this workshop. If interested, run the code below on your own laptop.
 
 ```{r eval = FALSE}
-## DO NOT RUN during the workshop as the data are large
+## DO NOT RUN during the workshop as the data are large and could crash your session
 if (!require("ExperimentHub", quietly = TRUE)) {
   BiocManager::install("ExperimentHub")
 }
@@ -174,7 +174,7 @@ plotColData(idc, "detected", "sum", colour_by = "qv") +
   geom_vline(xintercept = 10, lty = 2)
 ```
 
-However, we need to identify appropriate thresholds to classify poor quality cells. As the panel sizes and compositions for these emerging technologies are variable, there are no standards as of yet for filtering. For instance, immune cells will always have smaller library sizes and potentially a smaller number of genes expressed in a targetted panel as each cell type may be represented by a few marker genes. Desipte the lack of standards, the extreme cases where cells express fewer than 10 genes and have fewer than 10-20 detections are clearly of poor quality. As such, we can start with these thresholds and adjust based on other metrics and visualisations.
+However, we need to identify appropriate thresholds to classify poor quality cells. As the panel sizes and compositions for these emerging technologies are variable, there are no standards as of yet for filtering. For instance, immune cells will always have smaller library sizes and potentially a smaller number of genes expressed in a targetted panel as each cell type may be represented by a few marker genes. Additionally, these cells are smaller in size therefore could be filtered out using an area-based filter. Desipte the lack of standards, the extreme cases where cells express fewer than 10 genes and have fewer than 10-20 detections are clearly of poor quality. As such, we can start with these thresholds and adjust based on other metrics and visualisations.
 
 ```{r}
 # t-SNE plot
@@ -217,6 +217,19 @@ p1 + p2 + plot_annotation(title = "Quality score")
 
 ```{r}
 # t-SNE plot
+p1 = plotDR(idc, dimred = "TSNE", colour = subsets_neg_percent, alpha = 0.75, size = 0.5) +
+  scale_colour_viridis_c(option = "F", limits = c(0, 2), oob = scales::squish) +
+  labs(x = "TSNE1", y = "TSNE2") +
+  theme(legend.position = "bottom")
+# spatial plot
+p2 = plotSpatial(idc, colour = subsets_neg_percent, alpha = 0.75) +
+  scale_colour_viridis_c(option = "F", limits = c(0, 2), oob = scales::squish) +
+  theme(legend.position = "bottom")
+p1 + p2 + plot_annotation(title = "Proportion of negative control probes")
+```
+
+```{r}
+# t-SNE plot
 p1 = plotDR(idc, dimred = "TSNE", colour = overlaps_nucleus, alpha = 0.75, size = 0.5) +
   scale_colour_viridis_c(option = "F") +
   labs(x = "TSNE1", y = "TSNE2") +
@@ -225,7 +238,7 @@ p1 = plotDR(idc, dimred = "TSNE", colour = overlaps_nucleus, alpha = 0.75, size 
 p2 = plotSpatial(idc, colour = overlaps_nucleus, alpha = 0.75) +
   scale_colour_viridis_c(option = "F") +
   theme(legend.position = "bottom")
-p1 + p2 + plot_annotation(title = "Proportion of nucleur transcripts")
+p1 + p2 + plot_annotation(title = "Proportion of nuclear transcripts")
 ```
 
 Having visualised the quality metrics and their distrition across space and the genomic dimensions, we can now begin to test threshold values. We want to remove low quality cells but we have to be careful not to introduce bias (e.g., by preferentially removing biological entities such as regions or cells).
@@ -265,6 +278,8 @@ idc = idc[, idc$keep]
 idc = idc[!is_neg, ]
 ```
 
+> As these technologies are still emerging, all quality control metrics should be evaluated on a case-by-case basis depending on the platform, panel set, and tissue. Knowing the biology to expect or what is definitely NOT biology helps in making these decisions. As any experienced bioinformatician will tell you, you will vary these thresholds a few times throughout your analysis because you learn more about the data, biology, and platform as you analyse the data. This cyclical approach can introduce biases so always rely on multiple avenues of evidence before changing parameters.
+
 # Normalisation
 
 Above we plot the `sum`, which is commonly known as the library size, for the purpose of quality control. Assessing the library size is helpful in identifying poor quality cells. Beyond QC, variation in library size can affect donwstream analysis as it represents measurement bias. A gene may appear to be highly expressed in some cells simply because more measurements were sampled from the cell, and not because the gene is truly highly expressed. Whether it is sequencing-based or imaging-based transcriptomics, we are always sampling from the true pool of transcripts and are therefore likely to have library size variation.
@@ -296,7 +311,7 @@ set.seed(1000)
 idc = SpaNorm(idc, sample.p = 0.5, df.tps = 6)
 ```
 
-Above, the model is fit and the default adjustment, `logPAC`, is computed. Alternative adjustments such the mean biology (`meanbio`) can be computed as well (this will be faster as the fit does not need to be repeated).
+Above, the model is fit and the default adjustment, `logPAC`, is computed. Alternative adjustments such as the mean biology (`meanbio`) can be computed as well (this will be faster as the fit does not need to be repeated).
 
 ```{r}
 # compute mean biology
@@ -310,8 +325,10 @@ p2 = plotSpatial(idc_mean, what = "expression", assay = "logcounts", colour = EP
   scale_colour_viridis_c(option = "F") +
   ggtitle("Mean from SpaNorm model") +
   theme(legend.position = "bottom")
-p1 + p2 + plot_annotation(title = "Proportion of nucleur transcripts")
+p1 + p2 + plot_annotation(title = "Proportion of nuclear transcripts")
 ```
+
+_EPCAM_ is an epithelial cell marker gene that will also be expressed in breast cancer cells that are of epithelial origin. The SpaNorm model correctly models the regions where the cancer cells exist (mean) and is able to normalise technical effects without affecting the biology.
 
 # Cell typing
 
@@ -431,7 +448,7 @@ marker.info = scoreMarkers(idc, clusters, pairings = list(c("Malignant_2", "Fibr
 marker.info
 ```
 
-Below we compare the malignant (cancer) cells from region 2 (invasive) against those from region 5 (DCIS). Investigating and visialising the top genes shows that [DHRS](https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS) and [MUC6](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MUC6) are up-regulated in invasive cancer cells while [GATA3](https://www.genecards.org/cgi-bin/carddisp.pl?gene=GATA3) and [FLNB](https://www.genecards.org/cgi-bin/carddisp.pl?gene=FLNB) are moderately up-regulated in DCIS cancer cells.
+Below we compare the malignant (cancer) cells from region 2 (invasive) against those from region 5 (DCIS). Investigating and visialising the top genes shows that [_DHRS_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS) and [_MUC6_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MUC6) are up-regulated in invasive cancer cells while [_GATA3_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=GATA3) and [_FLNB_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=FLNB) are moderately up-regulated in DCIS cancer cells.
 
 ```{r fig.width=8, fig.height=8}
 library(scater)
@@ -453,7 +470,7 @@ plotExpression(idc,
   guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 ```
 
-Next we compare the fibroblasts from region 6 (stroma) against those from region 3 (tumour-adjacent). Investigating and visialising the top genes shows that [LUM](https://www.genecards.org/cgi-bin/carddisp.pl?gene=LUM) and [POSTN](https://www.genecards.org/cgi-bin/carddisp.pl?gene=POSTN) are up-regulated in stromal fibroblasts while [MMP11](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MMP11) and [AQP1](https://www.genecards.org/cgi-bin/carddisp.pl?gene=AQP1) are up-regulated in the tumour-adjacent fibroblasts.
+Next we compare the fibroblasts from region 6 (stroma) against those from region 3 (tumour-adjacent). Investigating and visialising the top genes shows that [_LUM_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=LUM) and [_POSTN_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=POSTN) are up-regulated in stromal fibroblasts while [_MMP11_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MMP11) and [_AQP1_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=AQP1) are up-regulated in the tumour-adjacent fibroblasts.
 
 ```{r fig.width=8, fig.height=8}
 # study markers of Malignant_2

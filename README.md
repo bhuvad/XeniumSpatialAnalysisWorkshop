@@ -41,20 +41,7 @@ Attendees will require a laptop with internet access and should have familiarity
 ### Guide
 
 This is necessary in order to reproduce the code shown in the workshop. 
-The workshop is designed for R `4.4.1` and Bioconductor `3.20`, and can be installed using one of the two ways below.
-
-### Via Docker image
-
-If you're familiar with [Docker](https://docs.docker.com/get-docker/) you could use the Docker image which has all the software pre-configured to the correct versions.
-
-```
-docker run -e PASSWORD=password -p 8787:8787 bhuvad/xeniumspatialanalysisworkshop:latest
-```
-
-Once running, navigate to <http://localhost:8787/> and then login with
-`Username:rstudio` and `Password:password`.
-
-You should see the Rmarkdown file with all the workshop code which you can run.
+The workshop is designed for R `4.4.1` and Bioconductor `3.20`, and can be installed as instructed below.
 
 ### Via GitHub
 
