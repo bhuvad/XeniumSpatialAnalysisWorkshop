@@ -93,7 +93,7 @@ Tan</h4>
 Melbourne<br><a class="author_email" href="mailto:#"></a><a href="mailto:cwtan@wehi.edu.au" class="email">cwtan@wehi.edu.au</a>
       </address>
                   
-            <h4 data-toc-skip class="date">Nov 2024</h4>
+            <h4 data-toc-skip class="date">Dec 2024</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/bhuvad/XeniumSpatialAnalysisWorkshop/blob/main/vignettes/workflow_spatial_xenium.Rmd"><code>vignettes/workflow_spatial_xenium.Rmd</code></a></small>
       <div class="hidden name"><code>workflow_spatial_xenium.Rmd</code></div>
@@ -110,11 +110,44 @@ version</strong>: 0.99.0</p>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>Technology, data, and types of problems that can be answered</p>
+<p>Spatial molecular technologies have revolutionised the study of
+biological systems. We can now study cellular and sub-cellular
+structures in complex systems. However, these technologies generate
+complex datasets that require new computational approaches and ideas to
+analyse. Many of these pipelines are still being developed therefore
+what is state-of-the-art now will not remain so for too long. However,
+the biological aim of analysis will mostly remain the same with more
+being uncovered as computational methods advance. This workshop intends
+to demonstrate the types of biological questions that can be studied
+using spatial transcriptomics datasets. Our intention is NOT to use the
+state-of-the-art methods, but to show you how data can be analysed to
+study spatial hypotheses. As users get familiar with these ideologies,
+they can swap out older tools with newer, more powerful tools.</p>
 </div>
 <div class="section level2">
-<h2 id="description-of-the-biological-problem">Description of the biological problem<a class="anchor" aria-label="anchor" href="#description-of-the-biological-problem"></a>
+<h2 id="pre-processing-steps-already-performed">Pre-processing steps already performed<a class="anchor" aria-label="anchor" href="#pre-processing-steps-already-performed"></a>
 </h2>
+<p>Data from the instrument comes in raw images that are often
+summerised to transcript tables. These tables are then coupled with
+immunofluorescence images for a few key proteins or marker such as DAPI
+which stains the nucleus, Pan-Cytokeratin which stains the membrane of
+cancer cells, a cocktail of membrane proteins, markers such as CD45
+which stain immune cells, and a cocktail of cytoplasmic markers
+(technology specific). These proteins are used to perform cell
+segmentation as the measurements are obtained at the transcript level
+and not the cell level (as is the case with single-cell RNA-seq data).
+Platforms provide segmented data and users can opt to perform their own
+segmentation if needed. We will use the already segmented cell-level
+count data. We will also use a previously prepared SpatialExperiment
+object. If users want to prepare their own object, all they need is the
+cell matrix file, the feature table, the cell table and a table of
+spatial coordinates (if this information is not already in the cell
+table). With these, information on preparing your own SpatialExperiment
+object can be found in this package’s <a href="https://www.bioconductor.org/packages/release/bioc/vignettes/SpatialExperiment/inst/doc/SpatialExperiment.html" class="external-link">vignette</a>.
+The design for this object is shown in the figure below.</p>
+<div class="float">
+<img src="https://raw.githubusercontent.com/drighelli/SpatialExperiment/refs/heads/devel/vignettes/SPE.png" alt="SpatialExperiment object schematic"><div class="figcaption">SpatialExperiment object schematic</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="loading-prepared-data">Loading prepared data<a class="anchor" aria-label="anchor" href="#loading-prepared-data"></a>
@@ -868,10 +901,6 @@ analysis on the factor loadings to explain the biological processes.</p>
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
-</h2>
-</div>
-<div class="section level2">
 <h2 class="unnumbered" id="packages-used">Packages used<a class="anchor" aria-label="anchor" href="#packages-used"></a>
 </h2>
 <p>This workflow depends on various packages from version 3.20 of the
@@ -910,7 +939,7 @@ below:</p>
 <span><span class="co">## [11] scran_1.34.0                         scuttle_1.16.0                      </span></span>
 <span><span class="co">## [13] SingleCellExperiment_1.28.1          SummarizedExperiment_1.36.0         </span></span>
 <span><span class="co">## [15] Biobase_2.66.0                       GenomicRanges_1.58.0                </span></span>
-<span><span class="co">## [17] GenomeInfoDb_1.42.0                  IRanges_2.40.0                      </span></span>
+<span><span class="co">## [17] GenomeInfoDb_1.42.1                  IRanges_2.40.0                      </span></span>
 <span><span class="co">## [19] S4Vectors_0.44.0                     BiocGenerics_0.52.0                 </span></span>
 <span><span class="co">## [21] MatrixGenerics_1.18.0                matrixStats_1.4.1                   </span></span>
 <span><span class="co">## [23] patchwork_1.3.0                      ggplot2_3.5.1                       </span></span>
@@ -924,7 +953,7 @@ below:</p>
 <span><span class="co">##  [11] vctrs_0.6.5               memoise_2.0.1            </span></span>
 <span><span class="co">##  [13] DelayedMatrixStats_1.28.0 prettydoc_0.4.1          </span></span>
 <span><span class="co">##  [15] htmltools_0.5.8.1         S4Arrays_1.6.0           </span></span>
-<span><span class="co">##  [17] BiocNeighbors_2.0.0       SparseArray_1.6.0        </span></span>
+<span><span class="co">##  [17] BiocNeighbors_2.0.1       SparseArray_1.6.0        </span></span>
 <span><span class="co">##  [19] sass_0.4.9                bslib_0.8.0              </span></span>
 <span><span class="co">##  [21] htmlwidgets_1.6.4         desc_1.4.3               </span></span>
 <span><span class="co">##  [23] plyr_1.8.9                cachem_1.1.0             </span></span>
