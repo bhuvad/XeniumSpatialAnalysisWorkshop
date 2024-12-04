@@ -72,9 +72,13 @@ knitr::write_bib(c(
 
 # Introduction
 
-Technology, data, and types of problems that can be answered
+Spatial molecular technologies have revolutionised the study of biological systems. We can now study cellular and sub-cellular structures in complex systems. However, these technologies generate complex datasets that require new computational approaches and ideas to analyse. Many of these pipelines are still being developed therefore what is state-of-the-art now will not remain so for too long. However, the biological aim of analysis will mostly remain the same with more being uncovered as computational methods advance. This workshop intends to demonstrate the types of biological questions that can be studied using spatial transcriptomics datasets. Our intention is NOT to use the state-of-the-art methods, but to show you how data can be analysed to study spatial hypotheses. As users get familiar with these ideologies, they can swap out older tools with newer, more powerful tools.
 
-# Description of the biological problem
+# Pre-processing steps already performed
+
+Data from the instrument comes in raw images that are often summerised to transcript tables. These tables are then coupled with immunofluorescence images for a few key proteins or marker such as DAPI which stains the nucleus, Pan-Cytokeratin which stains the membrane of cancer cells, a cocktail of membrane proteins, markers such as CD45 which stain immune cells, and a cocktail of cytoplasmic markers (technology specific). These proteins are used to perform cell segmentation as the measurements are obtained at the transcript level and not the cell level (as is the case with single-cell RNA-seq data). Platforms provide segmented data and users can opt to perform their own segmentation if needed. We will use the already segmented cell-level count data. We will also use a previously prepared SpatialExperiment object. If users want to prepare their own object, all they need is the cell matrix file, the feature table, the cell table and a table of spatial coordinates (if this information is not already in the cell table). With these, information on preparing your own SpatialExperiment object can be found in this package's [vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/SpatialExperiment/inst/doc/SpatialExperiment.html). The design for this object is shown in the figure below.
+
+![SpatialExperiment object schematic](https://raw.githubusercontent.com/drighelli/SpatialExperiment/refs/heads/devel/vignettes/SPE.png)
 
 # Loading prepared data
 
@@ -495,8 +499,6 @@ plotExpression(idc,
 The example dataset used here was generated using the 10x Xenium platform that measured 380 genes. More recent versions of this platform and competing platforms such as the NanoString CosMx are now providing around 5000 genes (soon whole transcriptome as well!). It is relatively easy to scan through the strongest differentially expressed genes from a list of at most 380 genes to understand the processes underpinning the system. With larger panel sizes, we need computational tools to perform such analyses, often referred to as gene-set enrichment analysis or functional analysis. As this is an extensive topic, it is not covered in depth in this workshop, however, we have previously developed a [workshop on gene-set enrichment analysis](https://davislaboratory.github.io/GenesetAnalysisWorkflow/) and refer the attendees to that if they are interested. A non-programmatic interface of some of the tools in our workshop can be accessed through [vissE.cloud](https://visse.cloud/).
 
 > Optional: You can also explore the full dataset from this workshop on vissE.cloud through the following [link](https://visse.cloud/galleryexample/xenium_V1FFPEHumanBreastIDCWithAddon_PCA). This exploratory analysis performs principal components analysis (PCA) or non-negative matrix factorisation (NMF) on the dataset to identify macroscopic biological programs. It then performs gene-set enrichment analysis on the factor loadings to explain the biological processes.
-
-# Summary
 
 # Packages used {.unnumbered}
 
