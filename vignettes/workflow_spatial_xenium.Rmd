@@ -304,7 +304,7 @@ To remove these library size biases, we perform library size normalisation. As m
 1. The tissue structure in one region is more rigid, thereby making it difficult for reagents to permeate.
 1. Reagents distributed unevenly due to technical issues leading to a sub-region within a tissue region being under sampled.
 
-In both cases, each cell cannot be normalised independently as nearby cells are likely to experience similar technical effects. To tackle this, our team has developed the SpaNorm normalisation method that uses spatial dependence to decouple technical and biological effects. SpaNorm uses a spatially constrained regularised generalised linear model to model library size effects and subsequently adjust the data.
+In both cases, each cell cannot be normalised independently as nearby cells are likely to experience similar technical effects. To tackle this, our team has developed the SpaNorm normalisation method that uses spatial dependence to decouple technical and biological effects [@salim2024spanorm]. SpaNorm uses a spatially constrained regularised generalised linear model to model library size effects and subsequently adjust the data.
 
 ![SpaNorm schematic](https://raw.githubusercontent.com/bhuvad/SpaNorm/refs/heads/master/vignettes/SpaNormWorkflow.png)
 
@@ -364,14 +364,90 @@ idc$cell_type = prediction$labels
 ```{r}
 plotSpatial(idc, colour = cell_type, alpha = 0.75) +
   scale_colour_brewer(palette = "Paired", na.value = "#333333") +
-  ggtitle("Mean from SpaNorm model") +
+  ggtitle("Predicted cell type") +
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
 ```
 
 # Spatial domain identification
 
-Regions were annotated by an expert pathologist in our dataset. However, this is not always feasible, either due to access to a pathologist, or because the features are not visible in histology images alone. In such instances, a computational approach is required to identify spatial domains or cellular niches. These domains are generally, but not always, defined based on the homogeneity of biology. As this is still a developing area, there are many algorithms available, however, they generally fall within these three categories:
+Regions were annotated by an expert pathologist in our dataset. However, this is not always feasible, either due to access to a pathologist, or because the features are not visible in histology images alone. In such instances, a computational approach is required to identify spatial domains or cellular niches. These domains are generally, but not always, defined based on the homogeneity of biology. As this is still a developing area, there are many algorithms available, however, they generally fall within two broad categories of methods:
+
+1. Cell type-based - These methods use the cell type information to identify regions where the cell type composition is homogeneous.
+1. Expression-based - These methods use the full expression profile of cells to identify regions of the tissue with homogeneous gene expression profiles.
+
+## Approach 1 - Cell type-based domain identification
+
+These methods use the cell types annotated in the previous type to determine the homogeneity of cell types within a local region of space around each cell. The [hoodscanR](https://bioconductor.org/packages/release/bioc/html/hoodscanR.html) method is one such method that computes the probability of each cell type being in a local neighbourhood of each cell in the dataset [@liu2024hoodscanr]. The neighbourhood of each cell is determined based on the `k` parameter which specifies how many of the nearest neighbouring cells should be used to estimate the cell type probabilities.
+
+```{r}
+library(hoodscanR)
+
+# find neighbouring cells
+nb_cells = findNearCells(idc, k = 100, anno_col = "cell_type")
+nb_cells$cells[1:5, 1:5]
+nb_cells$distance[1:5, 1:5]
+# estimate proportion of each cell type in the neighbourhood of each cell
+probmat = scanHoods(nb_cells$distance)
+dim(probmat)
+# compute probability of each each cell type in the neighbour hood of each cell
+neighbourhoods = mergeByGroup(probmat, nb_cells$cells)
+neighbourhoods[1:5, 1:5]
+# add neighbourhood information to the SpatialExperiment object
+idc = mergeHoodSpe(idc, neighbourhoods)
+```
+
+Once these probabilies are assigned around each cell, a secondary clustering can be performed using any desired method. The package currently only supports k-means clustering on the neighbourhood matrix but advanced users can cluster the matrix directly using their preferred method.
+
+```{r}
+# identify spatial domains based on neighbourhood composition (5 clusters)
+set.seed(100)
+idc = clustByHood(idc, pm_cols = colnames(neighbourhoods), k = 5, val_names = "clusters")
+# plot predictions
+p1 = plotSpatial(idc, colour = clusters, alpha = 0.75) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "predicted") +
+  ggtitle("Predicted pathology") +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 3, override.aes = list(shape = 15, size = 5)))
+p2 = plotSpatial(idc, colour = region) +
+  scale_colour_brewer(palette = "Dark2") +
+  ggtitle("Pathology annotations") +
+  guides(colour = guide_legend(nrow = 3, override.aes = list(shape = 15, size = 5)))
+p1 + p2 + plot_annotation(title = "Spatial domain identification")
+```
+
+The plot above shows that hoodscanR is able to differentiate the key regions and is clearly able to separate the distinct DCIS lesions. It is also able to identify the layer of cells separating the tumour lesions from the stroma. However, it is unable to distinguish between the invasive and DCIS regions. This is because our current annotation of cell types does not discriminate between the different cellular states of cells in these regions. This is one limitation of cell type based methods - that is, they need the labels of all possible cell types and cell states we are interested. However, the power of these methods is that we can study the neighbourhood composition directly as this was used to generate the domains.
+
+```{r}
+plotProbDist(idc, pm_cols = colnames(neighbourhoods), by_cluster = TRUE, plot_all = TRUE, show_clusters = as.character(seq(5)))
+```
+
+we see that cluster 3 is entirely defined by the presence of malignant cells while cluster 5 captures the tumour lining epithelial cells as well as fibroblasts. Cluster 2 is composed of the immune cells, particularly T cells, B cells and macrophages, indicating the formation of lymphoid aggregates. Lymphoid aggregates are interesting structures in the context of solid cancers, and depending on their expression profile, these can be beneficial for patients.
+
+```{r}
+# calculate metrics of heterogeneity - entropy
+idc = calcMetrics(idc, pm_cols = colnames(neighbourhoods))
+# plot metric
+p1 = plotSpatial(idc, colour = cell_type, alpha = 0.75) +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333") +
+  ggtitle("Predicted cell type") +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
+p2 = plotSpatial(idc, colour = entropy, alpha = 0.75) +
+  scale_colour_viridis_c(option = "G") +
+  ggtitle("Cell type heterogeneity") +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
+p1 + p2 + plot_annotation(title = "Cell type heterogeneity")
+```
+
+Looking at the heterogeneity of cell types across space, we see that cell composition is very homogeneous within the tumour regions while it is highest in the lymphoid aggregates which are often characterised by the presence of various different types of immune cells. We emphasise again that the homogeneity of the tumour regions is determined based on their cell type call alone and not on their expression profile. As such, the tumours themselves could be heterogeneous if finer cell typing or cell phenotyping were to be performed. Additionally, any errors made in cell typing will propage to domain identification.
+
+The approach that follows allows an unbiased identification of domains using the gene expression data directly.
+
+## Approach 2 - Expression-based domain identification
+
+Expression-based methods can be further sub-categorised into three categories:
 
 1. Graph Neural Network (GNN) or Graph Convolutional Network (GCN) based algorithms.
 1. Probabilistic models based on markov random fields.
@@ -408,7 +484,7 @@ idc = Banksy::clusterBanksy(idc, lambda = lambda, npcs = npcs, resolution = res)
 idc$predicted_region = idc$`clust_M0_lam0.2_k50_res0.8`
 
 plotSpatial(idc, colour = predicted_region, alpha = 0.75) +
-  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "predicted") +
   ggtitle("Mean from SpaNorm model") +
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(override.aes = list(shape = 15, size = 5)))
@@ -420,8 +496,8 @@ Looking back at the original annotations, we see that clusters 3 and 5 represent
 
 ```{r}
 p1 = plotSpatial(idc, colour = predicted_region, alpha = 0.75) +
-  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "cluster") +
-  ggtitle("Mean from SpaNorm model") +
+  scale_colour_brewer(palette = "Paired", na.value = "#333333", name = "predicted") +
+  ggtitle("Predicted pathology") +
   theme(legend.position = "bottom") +
   guides(colour = guide_legend(nrow = 3, override.aes = list(shape = 15, size = 5)))
 p2 = plotSpatial(idc, colour = region) +
@@ -430,6 +506,8 @@ p2 = plotSpatial(idc, colour = region) +
   guides(colour = guide_legend(nrow = 3, override.aes = list(shape = 15, size = 5)))
 p1 + p2 + plot_annotation(title = "Spatial domain identification")
 ```
+
+The choice of the better approach amongst the two demonstrated here should be based on the question of interest. They both have their strengths and limitations. BANKSY allows us to identify within tumour differences because it assesses the expression profile directly, however, it does not offer any additional interpretation of the domains it identifies and is therefore normally coupled with differential expression and differential compositional analysis. Errors in the domain identification would propagate to these downstream tasks as well. On the other hand, hoodscanR inherently provides interpretation of the domains it identifies, but it is limited by the accuracy and resolution of cell type annotation.
 
 # Differential expression
 
