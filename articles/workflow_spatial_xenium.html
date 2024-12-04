@@ -141,12 +141,12 @@ segmentation as the measurements are obtained at the transcript level
 and not the cell level (as is the case with single-cell RNA-seq data).
 Platforms provide segmented data and users can opt to perform their own
 segmentation if needed. If you wish you re-segment the data yourself,
-you could try using methods such as BIDCell <span class="citation">(<strong>fu2024bidcell?</strong>)</span> that use a
-single cell reference dataset to perform segmentation using the marker
-proteins as well as transcriptomics measurements. Do note that vendors
-are constantly improving segmentation and recent improvements are
-accurate on difficult to segment cells such as neurons and
-astrocytes.</p>
+you could try using methods such as BIDCell <span class="citation">(Fu
+et al. 2024)</span> that use a single cell reference dataset to perform
+segmentation using the marker proteins as well as transcriptomics
+measurements. Do note that vendors are constantly improving segmentation
+and recent improvements are accurate on difficult to segment cells such
+as neurons and astrocytes.</p>
 <p>We will use the already segmented cell-level count data. We will also
 use a previously prepared SpatialExperiment object. If users want to
 prepare their own object, all they need is the cell matrix file, the
@@ -495,7 +495,7 @@ and remove the negative control probes from donwstream analysis.</p>
 <span><span class="co"># remove negative probes</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="va">idc</span><span class="op">[</span><span class="op">!</span><span class="va">is_neg</span>, <span class="op">]</span></span></code></pre></div>
 <p>Newer quality control tools are being developed and are currently
-under peer-review. These include SpotSweeper <span class="citation">(<strong>totty2024spotsweeper?</strong>)</span> and <a href="https://github.com/drighelli/SpaceTrooper" class="external-link">SpaceTrooper</a>. As
+under peer-review. These include SpotSweeper <span class="citation">(Totty, Hicks, and Guo 2024)</span> and <a href="https://github.com/drighelli/SpaceTrooper" class="external-link">SpaceTrooper</a>. As
 these software are not deposited to more permanent repositories, we do
 not use them in this workshop. We advise advanced users to use these
 tools for their QC as they help come up with additional QC summaries for
@@ -540,10 +540,10 @@ RNA-seq (reactions happen independently for each sample/cell), each cell
 or sample can be normalised independently by computing
 sample/cell-specific adjustment factors. Measurements are locally
 dependent in spatial transcriptomics datasets therefore library size
-effects confound biology <span class="citation">(<strong>bhuva2024library?</strong>)</span>. The plot
-above show this clearly as the technical effect of library size is
-already showing tissue structures. These can be due to various causes
-such as:</p>
+effects confound biology <span class="citation">(Bhuva et al.
+2024)</span>. The plot above show this clearly as the technical effect
+of library size is already showing tissue structures. These can be due
+to various causes such as:</p>
 <ol style="list-style-type: decimal">
 <li>The tissue structure in one region is more rigid, thereby making it
 difficult for reagents to permeate.</li>
@@ -1223,6 +1223,19 @@ Austin Hsu, Suzanna Chak, et al. 2019. <span>“Reference-Based Analysis
 of Lung Single-Cell Sequencing Reveals a Transitional Profibrotic
 Macrophage.”</span> <em>Nature Immunology</em> 20 (2): 163–72.
 </div>
+<div id="ref-bhuva2024library" class="csl-entry">
+Bhuva, Dharmesh D, Chin Wee Tan, Agus Salim, Claire Marceaux, Marie A
+Pickering, Jinjin Chen, Malvika Kharbanda, et al. 2024. <span>“Library
+Size Confounds Biology in Spatial Transcriptomics Data.”</span>
+<em>Genome Biology</em> 25 (1): 99.
+</div>
+<div id="ref-fu2024bidcell" class="csl-entry">
+Fu, Xiaohang, Yingxin Lin, David M Lin, Daniel Mechtersheimer, Chuhan
+Wang, Farhan Ameen, Shila Ghazanfar, Ellis Patrick, Jinman Kim, and Jean
+YH Yang. 2024. <span>“BIDCell: Biologically-Informed Self-Supervised
+Learning for Segmentation of Subcellular Spatial Transcriptomics
+Data.”</span> <em>Nature Communications</em> 15 (1): 509.
+</div>
 <div id="ref-liu2024hoodscanr" class="csl-entry">
 Liu, Ning, Jarryd Martin, Dharmesh D Bhuva, Jinjin Chen, Mengbo Li,
 Samuel C Lee, Malvika Kharbanda, et al. 2024. <span>“hoodscanR:
@@ -1244,6 +1257,11 @@ Singhal, Vipul, Nigel Chou, Joseph Lee, Yifei Yue, Jinyue Liu, Wan Kee
 Chock, Li Lin, et al. 2024. <span>“BANKSY Unifies Cell Typing and Tissue
 Domain Segmentation for Scalable Spatial Omics Data Analysis.”</span>
 <em>Nature Genetics</em> 56 (3): 431–41.
+</div>
+<div id="ref-totty2024spotsweeper" class="csl-entry">
+Totty, Michael, Stephanie C Hicks, and Boyi Guo. 2024.
+<span>“SpotSweeper: Spatially-Aware Quality Control for Spatial
+Transcriptomics.”</span> <em>bioRxiv</em>.
 </div>
 <div id="ref-R-ggplot2" class="csl-entry">
 Wickham, Hadley, Winston Chang, Lionel Henry, Thomas Lin Pedersen,
