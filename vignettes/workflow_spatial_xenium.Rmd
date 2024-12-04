@@ -54,14 +54,12 @@ library(ggplot2)
 library(patchwork)
 library(scran)
 library(scater)
+library(scuttle)
 library(standR)
 library(SingleR)
 library(SpatialExperiment)
 library(SpaNorm)
 library(singscore)
-library(msigdb)
-library(vissE)
-library(igraph)
 library(XeniumSpatialAnalysisWorkshop)
 
 #automatically create a bib database for R packages
@@ -89,6 +87,8 @@ The data we will use in this workshop is from the 10x Xenium platform. Since the
 ![Full IDC](https://raw.githubusercontent.com/bhuvad/XeniumSpatialAnalysisWorkshop/refs/heads/main/inst/extdata/full_tissue.png)
 
 ```{r}
+library(SpatialExperiment)
+
 data(idc)
 # preview object
 idc
@@ -103,6 +103,9 @@ counts(idc)[1:5, 1:5]
 ```
 
 ```{r}
+library(ggplot2)
+library(patchwork)
+
 # set default point size to 0.5 for this report
 update_geom_defaults(geom = "point", new = list(size = 0.5))
 plotSpatial(idc, colour = region) +
@@ -153,6 +156,9 @@ We now use compute and visualise quality control metrics for each cell. Some of 
 Additionally, the vendor (10x) provides their own summary of quality through the `qv` score. This is usually provided per detected measurements but we compute the average per cell when deriving cellular summaries. Likewise, we compute the number of transcripts allocated to the nucleus (`overlaps_nucleus`).
 
 ```{r}
+library(scater)
+library(scuttle)
+
 # identify the negative control probes
 is_neg = rowData(idc)$genetype != "Gene"
 # compute QC metrics for each cell
@@ -183,6 +189,9 @@ plotColData(idc, "detected", "sum", colour_by = "qv") +
 However, we need to identify appropriate thresholds to classify poor quality cells. As the panel sizes and compositions for these emerging technologies are variable, there are no standards as of yet for filtering. For instance, immune cells will always have smaller library sizes and potentially a smaller number of genes expressed in a targetted panel as each cell type may be represented by a few marker genes. Additionally, these cells are smaller in size therefore could be filtered out using an area-based filter. Desipte the lack of standards, the extreme cases where cells express fewer than 10 genes and have fewer than 10-20 detections are clearly of poor quality. As such, we can start with these thresholds and adjust based on other metrics and visualisations.
 
 ```{r}
+library(standR)
+library(SpaNorm)
+
 # t-SNE plot
 p1 = plotDR(idc, dimred = "TSNE", colour = sum, alpha = 0.75, size = 0.5) +
   scale_colour_viridis_c(option = "F") +
@@ -355,6 +364,8 @@ ref_wu$label.cell_type
 ```
 
 ```{r}
+library(SingleR)
+
 # predict cell types using SingleR
 prediction = SingleR(test = idc, ref = ref_wu, labels = ref_wu$label.cell_type)
 # add prediction to the SpatialExperiment object
@@ -463,6 +474,8 @@ The following key parameters determine the final clustering results:
 1. `k_geom` - The number of nearest neighbours used to share information. The authors recommend values within [15, 30] and note that variation is minimal within this range.
 
 ```{r}
+library(Banksy)
+
 # parameters
 lambda = 0.2
 npcs = 50
@@ -470,15 +483,15 @@ k_geom = 30
 res = 0.8
 
 # compute the features required by Banksy
-idc = Banksy::computeBanksy(idc, assay_name = "logcounts", k_geom = k_geom)
+idc = computeBanksy(idc, assay_name = "logcounts", k_geom = k_geom)
 
 # compute PCA on the features
 set.seed(1000)
-idc = Banksy::runBanksyPCA(idc, lambda = lambda, npcs = npcs)
+idc = runBanksyPCA(idc, lambda = lambda, npcs = npcs)
 
 # perform graph-based clusering
 set.seed(1000)
-idc = Banksy::clusterBanksy(idc, lambda = lambda, npcs = npcs, resolution = res)
+idc = clusterBanksy(idc, lambda = lambda, npcs = npcs, resolution = res)
 
 # store to the column predicted_region
 idc$predicted_region = idc$`clust_M0_lam0.2_k50_res0.8`
@@ -539,8 +552,6 @@ marker.info
 Below we compare the malignant (cancer) cells from region 2 (invasive) against those from region 5 (DCIS). Investigating and visialising the top genes shows that [_DHRS_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS) and [_MUC6_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=MUC6) are up-regulated in invasive cancer cells while [_GATA3_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=GATA3) and [_FLNB_](https://www.genecards.org/cgi-bin/carddisp.pl?gene=FLNB) are moderately up-regulated in DCIS cancer cells.
 
 ```{r fig.width=8, fig.height=8}
-library(scater)
-
 # study markers of Malignant_2
 chosen_malignant <- marker.info[["Malignant_2"]]
 ordered_malignant <- chosen_malignant[order(chosen_malignant$rank.AUC), ]

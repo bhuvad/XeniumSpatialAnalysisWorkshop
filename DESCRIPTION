@@ -1,13 +1,13 @@
 Package: XeniumSpatialAnalysisWorkshop
 Title: Introduction to imaging-based spatial transcriptomics analysis
-Version: 0.99.0
+Version: 1.0.0
 Authors@R: 
     c(
       person(
         "Dharmesh",
         "Bhuva",
         "D.",
-        email = "bhuva.d@wehi.edu.au",
+        email = "dharmesh.bhuva@adelaide.edu.au",
         role = c("aut", "cre"),
         comment = c(ORCID = '0000-0002-6398-9157')
       ),
@@ -43,6 +43,7 @@ Imports:
     SingleR,
     Banksy,
     scater,
+    scuttle,
     scran,
     hoodscanR
 Suggests: 
