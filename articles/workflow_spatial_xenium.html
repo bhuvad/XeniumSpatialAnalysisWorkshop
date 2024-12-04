@@ -122,7 +122,10 @@ to demonstrate the types of biological questions that can be studied
 using spatial transcriptomics datasets. Our intention is NOT to use the
 state-of-the-art methods, but to show you how data can be analysed to
 study spatial hypotheses. As users get familiar with these ideologies,
-they can swap out older tools with newer, more powerful tools.</p>
+they can swap out older tools with newer, more powerful tools. As
+instructors, we hope to update this workshop as more and better tools
+become available. We look forward to receiving community contributions
+as well.</p>
 </div>
 <div class="section level2">
 <h2 id="pre-processing-steps-already-performed">Pre-processing steps already performed<a class="anchor" aria-label="anchor" href="#pre-processing-steps-already-performed"></a>
@@ -137,13 +140,20 @@ which stain immune cells, and a cocktail of cytoplasmic markers
 segmentation as the measurements are obtained at the transcript level
 and not the cell level (as is the case with single-cell RNA-seq data).
 Platforms provide segmented data and users can opt to perform their own
-segmentation if needed. We will use the already segmented cell-level
-count data. We will also use a previously prepared SpatialExperiment
-object. If users want to prepare their own object, all they need is the
-cell matrix file, the feature table, the cell table and a table of
-spatial coordinates (if this information is not already in the cell
-table). With these, information on preparing your own SpatialExperiment
-object can be found in this package’s <a href="https://www.bioconductor.org/packages/release/bioc/vignettes/SpatialExperiment/inst/doc/SpatialExperiment.html" class="external-link">vignette</a>.
+segmentation if needed. If you wish you re-segment the data yourself,
+you could try using methods such as BIDCell <span class="citation">(<strong>fu2024bidcell?</strong>)</span> that use a
+single cell reference dataset to perform segmentation using the marker
+proteins as well as transcriptomics measurements. Do note that vendors
+are constantly improving segmentation and recent improvements are
+accurate on difficult to segment cells such as neurons and
+astrocytes.</p>
+<p>We will use the already segmented cell-level count data. We will also
+use a previously prepared SpatialExperiment object. If users want to
+prepare their own object, all they need is the cell matrix file, the
+feature table, the cell table and a table of spatial coordinates (if
+this information is not already in the cell table). With these,
+information on preparing your own SpatialExperiment object can be found
+in this package’s <a href="https://www.bioconductor.org/packages/release/bioc/vignettes/SpatialExperiment/inst/doc/SpatialExperiment.html" class="external-link">vignette</a>.
 The design for this object is shown in the figure below.</p>
 <div class="float">
 <img src="https://raw.githubusercontent.com/drighelli/SpatialExperiment/refs/heads/devel/vignettes/SPE.png" alt="SpatialExperiment object schematic"><div class="figcaption">SpatialExperiment object schematic</div>
@@ -484,7 +494,17 @@ and remove the negative control probes from donwstream analysis.</p>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="va">idc</span><span class="op">[</span>, <span class="va">idc</span><span class="op">$</span><span class="va">keep</span><span class="op">]</span></span>
 <span><span class="co"># remove negative probes</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="va">idc</span><span class="op">[</span><span class="op">!</span><span class="va">is_neg</span>, <span class="op">]</span></span></code></pre></div>
-<blockquote>
+<p>Newer quality control tools are being developed and are currently
+under peer-review. These include SpotSweeper <span class="citation">(<strong>totty2024spotsweeper?</strong>)</span> and <a href="https://github.com/drighelli/SpaceTrooper" class="external-link">SpaceTrooper</a>. As
+these software are not deposited to more permanent repositories, we do
+not use them in this workshop. We advise advanced users to use these
+tools for their QC as they help come up with additional QC summaries for
+each cell or region in space. SpaceTrooper for instance, computes a flag
+score that penalises cells that are too large or small, and whose aspect
+ratio is large. While these filters may make sense in most systems, they
+could penalise stomal or neuronal cells that are elongated and whose
+aspect ratio will be very large. Therefore always remember that QC is
+relative the biological system being studied.</p>
 <p>As these technologies are still emerging, all quality control metrics
 should be evaluated on a case-by-case basis depending on the platform,
 panel set, and tissue. Knowing the biology to expect or what is
@@ -494,7 +514,6 @@ thresholds a few times throughout your analysis because you learn more
 about the data, biology, and platform as you analyse the data. This
 cyclical approach can introduce biases so always rely on multiple
 avenues of evidence before changing parameters.</p>
-</blockquote>
 </div>
 <div class="section level2">
 <h2 id="normalisation">Normalisation<a class="anchor" aria-label="anchor" href="#normalisation"></a>
@@ -521,9 +540,10 @@ RNA-seq (reactions happen independently for each sample/cell), each cell
 or sample can be normalised independently by computing
 sample/cell-specific adjustment factors. Measurements are locally
 dependent in spatial transcriptomics datasets therefore library size
-effects confound biology [REF]. The plot above show this clearly as the
-technical effect of library size is already showing tissue structures.
-These can be due to various causes such as:</p>
+effects confound biology <span class="citation">(<strong>bhuva2024library?</strong>)</span>. The plot
+above show this clearly as the technical effect of library size is
+already showing tissue structures. These can be due to various causes
+such as:</p>
 <ol style="list-style-type: decimal">
 <li>The tissue structure in one region is more rigid, thereby making it
 difficult for reagents to permeate.</li>
@@ -566,8 +586,10 @@ increased, regularisation should also be increased
 <span><span class="va">idc</span> <span class="op">=</span> <span class="fu">SpaNorm</span><span class="op">(</span><span class="va">idc</span>, sample.p <span class="op">=</span> <span class="fl">0.5</span>, df.tps <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></code></pre></div>
 <p>Above, the model is fit and the default adjustment,
 <code>logPAC</code>, is computed. Alternative adjustments such as the
-mean biology (<code>meanbio</code>) can be computed as well (this will
-be faster as the fit does not need to be repeated).</p>
+mean biology (<code>meanbio</code>), pearson residuals
+(<code>pearson</code>), and median biology (<code>median</code>) can be
+computed as well (this will be faster as the fit does not need to be
+repeated).</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># compute mean biology</span></span>
 <span><span class="va">idc_mean</span> <span class="op">=</span> <span class="fu">SpaNorm</span><span class="op">(</span><span class="va">idc</span>, adj.method <span class="op">=</span> <span class="st">"meanbio"</span><span class="op">)</span></span>
@@ -582,11 +604,22 @@ be faster as the fit does not need to be repeated).</p>
 <span>  <span class="fu">theme</span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu">plot_annotation</span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Proportion of nuclear transcripts"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-17-1.png" width="700"></p>
-<p><em>EPCAM</em> is an epithelial cell marker gene that will also be
-expressed in breast cancer cells that are of epithelial origin. The
-SpaNorm model correctly models the regions where the cancer cells exist
-(mean) and is able to normalise technical effects without affecting the
-biology.</p>
+<p><a href="https://www.genecards.org/cgi-bin/carddisp.pl?gene=DHRS" class="external-link"><em>EPCAM</em></a>
+is an epithelial cell marker gene that will also be expressed in breast
+cancer cells that are of epithelial origin. The SpaNorm model correctly
+models the regions where the cancer cells exist (mean) and is able to
+normalise technical effects without affecting the biology.</p>
+<p>Library size normalisation is important to ensure technical variation
+is removed from gene expression. In the most extreme cases, a gene that
+is highly expressed in a region of interest may seem to be lowly
+expressed because of a drop in library sizes in said region (see
+manuscript). We have seen that negative probes across most technologies
+are also capturing library size effects very well and are experimenting
+with using these to model technical variation and normalise data. In
+some technologies/datasets, these are very lowly expressed, not because
+of better data quality but by design as well, and therefore would NOT
+faithfully represent technical variation. As with every other step, this
+is still an active area of research.</p>
 </div>
 <div class="section level2">
 <h2 id="cell-typing">Cell typing<a class="anchor" aria-label="anchor" href="#cell-typing"></a>
@@ -597,9 +630,10 @@ across well to spatial transcriptomics datasets. The two common
 strategies are reference-based and reference-free annotations. In the
 former, annotations are mapped across from a previously annotated
 dataset. For a thorough discussion on this topic, review the <a href="https://bioconductor.org/books/release/OSCA/" class="external-link">Orchestrating
-Single-Cell Analysis (OSCA) with Bioconductor</a> book [REF]. Here, we
-use the SingleR package [REF] along with a reference breast cancer
-dataset [REF]. The processed dataset can be downloaded from <a href="https://www.weizmann.ac.il/sites/3CA/breast" class="external-link">Curated Cancer Cell
+Single-Cell Analysis (OSCA) with Bioconductor</a> book <span class="citation">(<strong>amezquita2020orchestrating?</strong>)</span>.
+Here, we use the SingleR package <span class="citation">(<strong>aran2019reference?</strong>)</span> along with
+a reference breast cancer dataset <span class="citation">(<strong>wu2021single?</strong>)</span>. The processed
+dataset can be downloaded from <a href="https://www.weizmann.ac.il/sites/3CA/breast" class="external-link">Curated Cancer Cell
 Atlas</a>.</p>
 <p>SingleR is a simple yet powerful algorithm that only requires a
 single prototype of what the cell type’s expression profile should look
@@ -668,7 +702,7 @@ graph-clustering is a relatively simple, yet powerful approach that
 scales to large datasets. Banksy is one such algorithm that first shares
 information within a local neighbourhood, and then performs a standard
 single-cell RNA-seq inspired graph-based clustering to identify spatial
-domains [REF].</p>
+domains <span class="citation">(<strong>singhal2024banksy?</strong>)</span>.</p>
 <p>The following key parameters determine the final clustering
 results:</p>
 <ol style="list-style-type: decimal">
@@ -964,7 +998,7 @@ below:</p>
 <span><span class="co">##  [33] digest_0.6.37             colorspace_2.1-1         </span></span>
 <span><span class="co">##  [35] AnnotationDbi_1.68.0      dqrng_0.4.1              </span></span>
 <span><span class="co">##  [37] irlba_2.3.5.1             textshaping_0.4.0        </span></span>
-<span><span class="co">##  [39] RSQLite_2.3.8             beachmat_2.22.0          </span></span>
+<span><span class="co">##  [39] RSQLite_2.3.9             beachmat_2.22.0          </span></span>
 <span><span class="co">##  [41] sccore_1.0.5              labeling_0.4.3           </span></span>
 <span><span class="co">##  [43] fansi_1.0.6               httr_1.4.7               </span></span>
 <span><span class="co">##  [45] abind_1.4-8               compiler_4.4.2           </span></span>
@@ -985,7 +1019,7 @@ below:</p>
 <span><span class="co">##  [75] pillar_1.9.0              stringr_1.5.1            </span></span>
 <span><span class="co">##  [77] limma_3.62.1              RcppHungarian_0.3        </span></span>
 <span><span class="co">##  [79] splines_4.4.2             dplyr_1.1.4              </span></span>
-<span><span class="co">##  [81] lattice_0.22-6            bit_4.5.0                </span></span>
+<span><span class="co">##  [81] lattice_0.22-6            bit_4.5.0.1              </span></span>
 <span><span class="co">##  [83] annotate_1.84.0           tidyselect_1.2.1         </span></span>
 <span><span class="co">##  [85] locfit_1.5-9.10           Biostrings_2.74.0        </span></span>
 <span><span class="co">##  [87] knitr_1.49                gridExtra_2.3            </span></span>
