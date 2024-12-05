@@ -105,6 +105,7 @@ counts(idc)[1:5, 1:5]
 ```{r}
 library(ggplot2)
 library(patchwork)
+library(SpaNorm)
 
 # set default point size to 0.5 for this report
 update_geom_defaults(geom = "point", new = list(size = 0.5))
@@ -190,7 +191,6 @@ However, we need to identify appropriate thresholds to classify poor quality cel
 
 ```{r}
 library(standR)
-library(SpaNorm)
 
 # t-SNE plot
 p1 = plotDR(idc, dimred = "TSNE", colour = sum, alpha = 0.75, size = 0.5) +
@@ -394,7 +394,8 @@ These methods use the cell types annotated in the previous type to determine the
 ```{r}
 library(hoodscanR)
 
-# find neighbouring cells
+# find neighbouring cells using an approximate nearest neighbour search
+set.seed(1000)
 nb_cells = findNearCells(idc, k = 100, anno_col = "cell_type")
 nb_cells$cells[1:5, 1:5]
 nb_cells$distance[1:5, 1:5]
@@ -412,7 +413,7 @@ Once these probabilies are assigned around each cell, a secondary clustering can
 
 ```{r}
 # identify spatial domains based on neighbourhood composition (5 clusters)
-set.seed(100)
+set.seed(1000)
 idc = clustByHood(idc, pm_cols = colnames(neighbourhoods), k = 5, val_names = "clusters")
 # plot predictions
 p1 = plotSpatial(idc, colour = clusters, alpha = 0.75) +
@@ -433,7 +434,7 @@ The plot above shows that hoodscanR is able to differentiate the key regions and
 plotProbDist(idc, pm_cols = colnames(neighbourhoods), by_cluster = TRUE, plot_all = TRUE, show_clusters = as.character(seq(5)))
 ```
 
-we see that cluster 3 is entirely defined by the presence of malignant cells while cluster 5 captures the tumour lining epithelial cells as well as fibroblasts. Cluster 2 is composed of the immune cells, particularly T cells, B cells and macrophages, indicating the formation of lymphoid aggregates. Lymphoid aggregates are interesting structures in the context of solid cancers, and depending on their expression profile, these can be beneficial for patients.
+we see that cluster 5 is entirely defined by the presence of malignant cells while cluster 2 captures the tumour lining epithelial cells as well as fibroblasts. Cluster 3 is composed of the immune cells, particularly T cells, B cells and macrophages, indicating the formation of lymphoid aggregates. Lymphoid aggregates are interesting structures in the context of solid cancers, and depending on their expression profile, these can be beneficial for patients.
 
 ```{r}
 # calculate metrics of heterogeneity - entropy
