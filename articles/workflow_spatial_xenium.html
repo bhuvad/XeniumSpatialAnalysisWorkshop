@@ -807,11 +807,11 @@ used to generate the domains.</p>
 <p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-23-1.png" width="700"></p>
 <p>we see that cluster 5 is entirely defined by the presence of
 malignant cells while cluster 2 captures the tumour lining epithelial
-cells as well as fibroblasts. Cluster 3 is composed of the immune cells,
-particularly T cells, B cells and macrophages, indicating the formation
-of lymphoid aggregates. Lymphoid aggregates are interesting structures
-in the context of solid cancers, and depending on their expression
-profile, these can be beneficial for patients.</p>
+cells, malignant cells, and fibroblasts. Cluster 1 is composed of the
+immune cells, particularly T cells, B cells and macrophages, indicating
+the formation of lymphoid aggregates. Lymphoid aggregates are
+interesting structures in the context of solid cancers, and depending on
+their expression profile, these can be beneficial for patients.</p>
 <div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># calculate metrics of heterogeneity - entropy</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="fu"><a href="https://davislaboratory.github.io/hoodscanR/reference/calcMetrics.html" class="external-link">calcMetrics</a></span><span class="op">(</span><span class="va">idc</span>, pm_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">neighbourhoods</span><span class="op">)</span><span class="op">)</span></span>
