@@ -434,7 +434,7 @@ The plot above shows that hoodscanR is able to differentiate the key regions and
 plotProbDist(idc, pm_cols = colnames(neighbourhoods), by_cluster = TRUE, plot_all = TRUE, show_clusters = as.character(seq(5)))
 ```
 
-we see that cluster 5 is entirely defined by the presence of malignant cells while cluster 2 captures the tumour lining epithelial cells as well as fibroblasts. Cluster 3 is composed of the immune cells, particularly T cells, B cells and macrophages, indicating the formation of lymphoid aggregates. Lymphoid aggregates are interesting structures in the context of solid cancers, and depending on their expression profile, these can be beneficial for patients.
+we see that cluster 5 is entirely defined by the presence of malignant cells while cluster 2 captures the tumour lining epithelial cells, malignant cells, and fibroblasts. Cluster 1 is composed of the immune cells, particularly T cells, B cells and macrophages, indicating the formation of lymphoid aggregates. Lymphoid aggregates are interesting structures in the context of solid cancers, and depending on their expression profile, these can be beneficial for patients.
 
 ```{r}
 # calculate metrics of heterogeneity - entropy
