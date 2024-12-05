@@ -264,10 +264,11 @@ tissue below.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bhuvad.github.io/SpaNorm" class="external-link">SpaNorm</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># set default point size to 0.5 for this report</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/update_defaults.html" class="external-link">update_geom_defaults</a></span><span class="op">(</span>geom <span class="op">=</span> <span class="st">"point"</span>, new <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">plotSpatial</span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">region</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu"><a href="https://bhuvad.github.io/spaNorm/reference/plotSpatial.html" class="external-link">plotSpatial</a></span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">region</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_colour_brewer</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"Dark2"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="co"># improve legend visibility</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guides.html" class="external-link">guides</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/guide_legend.html" class="external-link">guide_legend</a></span><span class="op">(</span>override.aes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>shape <span class="op">=</span> <span class="fl">15</span>, size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -396,7 +397,6 @@ with these thresholds and adjust based on other metrics and
 visualisations.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/DavisLaboratory/standR" class="external-link">standR</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://bhuvad.github.io/SpaNorm" class="external-link">SpaNorm</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># t-SNE plot</span></span>
 <span><span class="va">p1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/standR/man/plotDR.html" class="external-link">plotDR</a></span><span class="op">(</span><span class="va">idc</span>, dimred <span class="op">=</span> <span class="st">"TSNE"</span>, colour <span class="op">=</span> <span class="va">sum</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, size <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
@@ -722,7 +722,8 @@ the cell type probabilities.</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/DavisLaboratory/hoodscanR" class="external-link">hoodscanR</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># find neighbouring cells</span></span>
+<span><span class="co"># find neighbouring cells using an approximate nearest neighbour search</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="va">nb_cells</span> <span class="op">=</span> <span class="fu"><a href="https://davislaboratory.github.io/hoodscanR/reference/findNearCells.html" class="external-link">findNearCells</a></span><span class="op">(</span><span class="va">idc</span>, k <span class="op">=</span> <span class="fl">100</span>, anno_col <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span>
 <span><span class="va">nb_cells</span><span class="op">$</span><span class="va">cells</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span></code></pre></div>
 <pre><code><span><span class="co">##            nearest_cell_1 nearest_cell_2 nearest_cell_3 nearest_cell_4</span></span>
@@ -776,7 +777,7 @@ but advanced users can cluster the matrix directly using their preferred
 method.</p>
 <div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># identify spatial domains based on neighbourhood composition (5 clusters)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="va">idc</span> <span class="op">=</span> <span class="fu"><a href="https://davislaboratory.github.io/hoodscanR/reference/clustByHood.html" class="external-link">clustByHood</a></span><span class="op">(</span><span class="va">idc</span>, pm_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">neighbourhoods</span><span class="op">)</span>, k <span class="op">=</span> <span class="fl">5</span>, val_names <span class="op">=</span> <span class="st">"clusters"</span><span class="op">)</span></span>
 <span><span class="co"># plot predictions</span></span>
 <span><span class="va">p1</span> <span class="op">=</span> <span class="fu"><a href="https://bhuvad.github.io/spaNorm/reference/plotSpatial.html" class="external-link">plotSpatial</a></span><span class="op">(</span><span class="va">idc</span>, colour <span class="op">=</span> <span class="va">clusters</span>, alpha <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span> <span class="op">+</span></span>
@@ -804,9 +805,9 @@ used to generate the domains.</p>
 <div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://davislaboratory.github.io/hoodscanR/reference/plotProbDist.html" class="external-link">plotProbDist</a></span><span class="op">(</span><span class="va">idc</span>, pm_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">neighbourhoods</span><span class="op">)</span>, by_cluster <span class="op">=</span> <span class="cn">TRUE</span>, plot_all <span class="op">=</span> <span class="cn">TRUE</span>, show_clusters <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="workflow_spatial_xenium_files/figure-html/unnamed-chunk-23-1.png" width="700"></p>
-<p>we see that cluster 3 is entirely defined by the presence of
-malignant cells while cluster 5 captures the tumour lining epithelial
-cells as well as fibroblasts. Cluster 2 is composed of the immune cells,
+<p>we see that cluster 5 is entirely defined by the presence of
+malignant cells while cluster 2 captures the tumour lining epithelial
+cells as well as fibroblasts. Cluster 3 is composed of the immune cells,
 particularly T cells, B cells and macrophages, indicating the formation
 of lymphoid aggregates. Lymphoid aggregates are interesting structures
 in the context of solid cancers, and depending on their expression
